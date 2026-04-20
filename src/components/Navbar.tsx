@@ -10,7 +10,7 @@ import { Category } from '../types';
 import { toast } from 'sonner';
 
 const Navbar = () => {
-  const { user, profile, signOut } = useAuth();
+  const { user, isAdmin, signOut } = useAuth();
   const { totalItems } = useCart();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
@@ -97,7 +97,7 @@ const Navbar = () => {
                 )}
               </div>
             ))}
-            {profile?.role === 'admin' && (
+            {isAdmin && (
               <Link to="/admin" className="px-4 py-2 text-sm font-bold text-red-600 hover:bg-red-50 rounded-lg transition-colors">
                 Admin Panel
               </Link>
@@ -212,7 +212,7 @@ const Navbar = () => {
                     {link.name}
                   </Link>
                 ))}
-                {profile?.role === 'admin' && (
+                {isAdmin && (
                   <Link 
                     to="/admin" 
                     onClick={() => setIsMenuOpen(false)}

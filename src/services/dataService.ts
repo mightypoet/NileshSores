@@ -1,17 +1,33 @@
-import { supabase } from '../lib/supabase';
-import { Product, Category, Banner } from '../types';
+import { db, storage } from '../lib/firebase';
+import { 
+  collection, 
+  getDocs, 
+  addDoc, 
+  updateDoc, 
+  deleteDoc, 
+  doc, 
+  query, 
+  where, 
+  orderBy, 
+  getDoc,
+  serverTimestamp,
+  Timestamp
+} from 'firebase/firestore';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { Product, Category, Banner, Order, UserProfile } from '../types';
 import { products as mockProducts, categories as mockCategories } from '../data/mockData';
 
 export const dataService = {
   async getProducts(): Promise<Product[]> {
     try {
-      const { data, error } = await supabase
-        .from('products')
-        .select('*')
-        .order('createdAt', { ascending: false });
+      const q = query(collection(db, 'products'), orderBy('createdAt', 'desc'));
+      const querySnapshot = await getDocs(q);
+      const products = querySnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      })) as Product[];
       
-      if (error) throw error;
-      if (data && data.length > 0) return data as Product[];
+      if (products.length > 0) return products;
       return mockProducts;
     } catch (error) {
       console.error("Error fetching products:", error);
@@ -21,13 +37,13 @@ export const dataService = {
 
   async createProduct(product: Partial<Product>): Promise<Product | null> {
     try {
-      const { data, error } = await supabase
-        .from('products')
-        .insert([product])
-        .select()
-        .single();
-      if (error) throw error;
-      return data as Product;
+      const docRef = await addDoc(collection(db, 'products'), {
+        ...product,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp()
+      });
+      const newDoc = await getDoc(docRef);
+      return { id: docRef.id, ...newDoc.data() } as Product;
     } catch (error) {
       console.error("Error creating product:", error);
       return null;
@@ -36,14 +52,13 @@ export const dataService = {
 
   async updateProduct(id: string, updates: Partial<Product>): Promise<Product | null> {
     try {
-      const { data, error } = await supabase
-        .from('products')
-        .update(updates)
-        .eq('id', id)
-        .select()
-        .single();
-      if (error) throw error;
-      return data as Product;
+      const docRef = doc(db, 'products', id);
+      await updateDoc(docRef, {
+        ...updates,
+        updatedAt: serverTimestamp()
+      });
+      const updatedDoc = await getDoc(docRef);
+      return { id: docRef.id, ...updatedDoc.data() } as Product;
     } catch (error) {
       console.error("Error updating product:", error);
       return null;
@@ -52,11 +67,7 @@ export const dataService = {
 
   async deleteProduct(id: string): Promise<boolean> {
     try {
-      const { error } = await supabase
-        .from('products')
-        .delete()
-        .eq('id', id);
-      if (error) throw error;
+      await deleteDoc(doc(db, 'products', id));
       return true;
     } catch (error) {
       console.error("Error deleting product:", error);
@@ -66,13 +77,14 @@ export const dataService = {
 
   async getCategories(): Promise<Category[]> {
     try {
-      const { data, error } = await supabase
-        .from('categories')
-        .select('*')
-        .order('name');
+      const q = query(collection(db, 'categories'), orderBy('name'));
+      const querySnapshot = await getDocs(q);
+      const categories = querySnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      })) as Category[];
       
-      if (error) throw error;
-      if (data && data.length > 0) return data as Category[];
+      if (categories.length > 0) return categories;
       return mockCategories;
     } catch (error) {
       console.error("Error fetching categories:", error);
@@ -82,13 +94,9 @@ export const dataService = {
 
   async createCategory(category: Partial<Category>): Promise<Category | null> {
     try {
-      const { data, error } = await supabase
-        .from('categories')
-        .insert([category])
-        .select()
-        .single();
-      if (error) throw error;
-      return data as Category;
+      const docRef = await addDoc(collection(db, 'categories'), category);
+      const newDoc = await getDoc(docRef);
+      return { id: docRef.id, ...newDoc.data() } as Category;
     } catch (error) {
       console.error("Error creating category:", error);
       return null;
@@ -97,14 +105,10 @@ export const dataService = {
 
   async updateCategory(id: string, updates: Partial<Category>): Promise<Category | null> {
     try {
-      const { data, error } = await supabase
-        .from('categories')
-        .update(updates)
-        .eq('id', id)
-        .select()
-        .single();
-      if (error) throw error;
-      return data as Category;
+      const docRef = doc(db, 'categories', id);
+      await updateDoc(docRef, updates);
+      const updatedDoc = await getDoc(docRef);
+      return { id: docRef.id, ...updatedDoc.data() } as Category;
     } catch (error) {
       console.error("Error updating category:", error);
       return null;
@@ -113,11 +117,7 @@ export const dataService = {
 
   async deleteCategory(id: string): Promise<boolean> {
     try {
-      const { error } = await supabase
-        .from('categories')
-        .delete()
-        .eq('id', id);
-      if (error) throw error;
+      await deleteDoc(doc(db, 'categories', id));
       return true;
     } catch (error) {
       console.error("Error deleting category:", error);
@@ -127,12 +127,12 @@ export const dataService = {
 
   async getBanners(): Promise<Banner[]> {
     try {
-      const { data, error } = await supabase
-        .from('banners')
-        .select('*')
-        .order('order');
-      if (error) throw error;
-      return data as Banner[];
+      const q = query(collection(db, 'banners'), orderBy('order'));
+      const querySnapshot = await getDocs(q);
+      return querySnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      })) as Banner[];
     } catch (error) {
       console.error("Error fetching banners:", error);
       return [];
@@ -141,13 +141,9 @@ export const dataService = {
 
   async createBanner(banner: Partial<Banner>): Promise<Banner | null> {
     try {
-      const { data, error } = await supabase
-        .from('banners')
-        .insert([banner])
-        .select()
-        .single();
-      if (error) throw error;
-      return data as Banner;
+      const docRef = await addDoc(collection(db, 'banners'), banner);
+      const newDoc = await getDoc(docRef);
+      return { id: docRef.id, ...newDoc.data() } as Banner;
     } catch (error) {
       console.error("Error creating banner:", error);
       return null;
@@ -156,14 +152,10 @@ export const dataService = {
 
   async updateBanner(id: string, updates: Partial<Banner>): Promise<Banner | null> {
     try {
-      const { data, error } = await supabase
-        .from('banners')
-        .update(updates)
-        .eq('id', id)
-        .select()
-        .single();
-      if (error) throw error;
-      return data as Banner;
+      const docRef = doc(db, 'banners', id);
+      await updateDoc(docRef, updates);
+      const updatedDoc = await getDoc(docRef);
+      return { id: docRef.id, ...updatedDoc.data() } as Banner;
     } catch (error) {
       console.error("Error updating banner:", error);
       return null;
@@ -172,11 +164,7 @@ export const dataService = {
 
   async deleteBanner(id: string): Promise<boolean> {
     try {
-      const { error } = await supabase
-        .from('banners')
-        .delete()
-        .eq('id', id);
-      if (error) throw error;
+      await deleteDoc(doc(db, 'banners', id));
       return true;
     } catch (error) {
       console.error("Error deleting banner:", error);
@@ -186,21 +174,9 @@ export const dataService = {
 
   async uploadImage(file: File, bucket: string): Promise<string | null> {
     try {
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${Math.random().toString(36).substring(2)}.${fileExt}`;
-      const filePath = `uploads/${fileName}`;
-
-      const { error: uploadError } = await supabase.storage
-        .from(bucket)
-        .upload(filePath, file);
-
-      if (uploadError) throw uploadError;
-
-      const { data } = supabase.storage
-        .from(bucket)
-        .getPublicUrl(filePath);
-
-      return data.publicUrl;
+      const storageRef = ref(storage, `${bucket}/${Date.now()}-${file.name}`);
+      const snapshot = await uploadBytes(storageRef, file);
+      return await getDownloadURL(snapshot.ref);
     } catch (error) {
       console.error("Error uploading image:", error);
       return null;
@@ -209,22 +185,72 @@ export const dataService = {
 
   async getProductBySlug(slug: string): Promise<Product | null> {
     try {
-      const { data, error } = await supabase
-        .from('products')
-        .select('*')
-        .eq('slug', slug)
-        .single();
+      const q = query(collection(db, 'products'), where('slug', '==', slug));
+      const querySnapshot = await getDocs(q);
       
-      if (error) {
-        // Fallback to mock data if not found in DB
+      if (querySnapshot.empty) {
         const mockProduct = mockProducts.find(p => p.slug === slug);
         return mockProduct || null;
       }
-      return data as Product;
+      
+      const doc = querySnapshot.docs[0];
+      return { id: doc.id, ...doc.data() } as Product;
     } catch (error) {
       console.error("Error fetching product by slug:", error);
       const mockProduct = mockProducts.find(p => p.slug === slug);
       return mockProduct || null;
+    }
+  },
+
+  // Order Management
+  async getOrders(): Promise<Order[]> {
+    try {
+      const q = query(collection(db, 'orders'), orderBy('createdAt', 'desc'));
+      const querySnapshot = await getDocs(q);
+      return querySnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      })) as Order[];
+    } catch (error) {
+      console.error("Error fetching orders:", error);
+      return [];
+    }
+  },
+
+  async updateOrderStatus(id: string, status: Order['status']): Promise<boolean> {
+    try {
+      const docRef = doc(db, 'orders', id);
+      await updateDoc(docRef, { status });
+      return true;
+    } catch (error) {
+      console.error("Error updating order status:", error);
+      return false;
+    }
+  },
+
+  // User Management
+  async getUsers(): Promise<UserProfile[]> {
+    try {
+      const q = query(collection(db, 'users'), orderBy('createdAt', 'desc'));
+      const querySnapshot = await getDocs(q);
+      return querySnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      })) as UserProfile[];
+    } catch (error) {
+      console.error("Error fetching users:", error);
+      return [];
+    }
+  },
+
+  async updateUserRole(id: string, role: 'customer' | 'admin'): Promise<boolean> {
+    try {
+      const docRef = doc(db, 'users', id);
+      await updateDoc(docRef, { role });
+      return true;
+    } catch (error) {
+      console.error("Error updating user role:", error);
+      return false;
     }
   }
 };

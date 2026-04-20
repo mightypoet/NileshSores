@@ -1,6 +1,11 @@
 import { useState } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
-import { supabase } from '../lib/supabase';
+import { auth, db } from '../lib/firebase';
+import { 
+  signInWithPopup, 
+  GoogleAuthProvider 
+} from 'firebase/auth';
+import { doc, setDoc, getDoc } from 'firebase/firestore';
 import { motion } from 'motion/react';
 import { Button } from '@/components/ui/button';
 import { ShieldCheck, PenTool, Sparkles, AlertCircle } from 'lucide-react';
@@ -16,22 +21,30 @@ export default function Login() {
   const handleGoogleLogin = async () => {
     setLoading(true);
     setError(null);
+    const provider = new GoogleAuthProvider();
     
     try {
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: {
-          redirectTo: `${window.location.origin}/account`,
-        }
-      });
+      const result = await signInWithPopup(auth, provider);
+      const user = result.user;
 
-      if (error) throw error;
-      
-      // Note: redirectTo will handle the navigation after successful login
-      toast.info('Redirecting to Google login...');
+      // Create profile if it doesn't exist
+      const profileRef = doc(db, 'users', user.uid);
+      const profileSnap = await getDoc(profileRef);
+
+      if (!profileSnap.exists()) {
+        await setDoc(profileRef, {
+          name: user.displayName,
+          email: user.email,
+          role: user.email === 'storesnilesh@gmail.com' ? 'admin' : 'customer',
+          createdAt: new Date().toISOString()
+        });
+      }
+
+      toast.success('Welcome back to Nilesh Store!');
+      navigate(from, { replace: true });
     } catch (error: any) {
       setError('Unable to authenticate with Google. Please try again.');
-      toast.error('Gogle login failed.');
+      toast.error('Google login failed.');
       console.error("Login error:", error);
     } finally {
       setLoading(false);

@@ -9,7 +9,9 @@ import {
   Menu, 
   X,
   ChevronRight,
-  Store
+  Store,
+  ShoppingCart,
+  Users
 } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import { Button } from '../ui/button';
@@ -23,8 +25,10 @@ const AdminLayout: React.FC = () => {
 
   const menuItems = [
     { name: 'Dashboard', path: '/admin', icon: LayoutDashboard },
+    { name: 'Orders', path: '/admin/orders', icon: ShoppingCart },
     { name: 'Products', path: '/admin/products', icon: Package },
     { name: 'Categories', path: '/admin/categories', icon: Layers },
+    { name: 'Users', path: '/admin/users', icon: Users },
     { name: 'Banners', path: '/admin/banners', icon: ImageIcon },
   ];
 

@@ -25,9 +25,11 @@ import AdminDashboard from './pages/admin/Dashboard';
 import AdminProducts from './pages/admin/Products';
 import AdminCategories from './pages/admin/Categories';
 import AdminBanners from './pages/admin/Banners';
+import AdminOrders from './pages/admin/Orders';
+import AdminUsers from './pages/admin/Users';
 
 const ProtectedRoute = ({ children, requireAdmin = false }: { children: React.ReactNode, requireAdmin?: boolean }) => {
-  const { user, profile, loading } = useAuth();
+  const { user, isAdmin, loading } = useAuth();
 
   if (loading) {
     return (
@@ -41,7 +43,7 @@ const ProtectedRoute = ({ children, requireAdmin = false }: { children: React.Re
     return <Navigate to="/login" replace />;
   }
 
-  if (requireAdmin && profile?.role !== 'admin') {
+  if (requireAdmin && !isAdmin) {
     return <Navigate to="/" replace />;
   }
 
@@ -91,8 +93,10 @@ export default function App() {
               }
             >
               <Route index element={<AdminDashboard />} />
+              <Route path="orders" element={<AdminOrders />} />
               <Route path="products" element={<AdminProducts />} />
               <Route path="categories" element={<AdminCategories />} />
+              <Route path="users" element={<AdminUsers />} />
               <Route path="banners" element={<AdminBanners />} />
             </Route>
 

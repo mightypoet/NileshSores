@@ -1,6 +1,7 @@
 import React, { useState, useEffect, createContext, useContext } from 'react';
-import { supabase } from '../lib/supabase';
-import { User } from '@supabase/supabase-js';
+import { auth, db } from '../lib/firebase';
+import { onAuthStateChanged, signOut as firebaseSignOut, User } from 'firebase/auth';
+import { doc, getDoc } from 'firebase/firestore';
 import { UserProfile } from '../types';
 
 interface AuthContextType {
@@ -25,59 +26,44 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Check active sessions and sets the user
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setUser(session?.user ?? null);
-      if (!session?.user) setLoading(false);
-    });
-
-    // Listen for changes on auth state (signed in, signed out, etc.)
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
-      setUser(session?.user ?? null);
-      if (!session) {
+    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+      setUser(firebaseUser);
+      
+      if (firebaseUser) {
+        try {
+          const docRef = doc(db, 'users', firebaseUser.uid);
+          const docSnap = await getDoc(docRef);
+          
+          if (docSnap.exists()) {
+            setProfile({ id: docSnap.id, ...docSnap.data() } as UserProfile);
+          } else {
+            // Default profile for new users
+            setProfile(null);
+          }
+        } catch (error) {
+          console.error("Error fetching user profile:", error);
+        }
+      } else {
         setProfile(null);
-        setLoading(false);
       }
+      
+      setLoading(false);
     });
 
-    return () => {
-      subscription.unsubscribe();
-    };
+    return () => unsubscribe();
   }, []);
 
-  useEffect(() => {
-    if (user) {
-      const fetchProfile = async () => {
-        try {
-          const { data, error } = await supabase
-            .from('profiles')
-            .select('*')
-            .eq('id', user.id)
-            .single();
-
-          if (error) {
-            console.error("Error fetching user profile:", error);
-          } else {
-            setProfile({ id: data.id, ...data } as UserProfile);
-          }
-        } finally {
-          setLoading(false);
-        }
-      };
-      
-      fetchProfile();
-    }
-  }, [user]);
-
   const signOut = async () => {
-    await supabase.auth.signOut();
+    await firebaseSignOut(auth);
   };
+
+  const isUserAdmin = profile?.role === 'admin' || user?.email === 'storesnilesh@gmail.com';
 
   const value = {
     user,
     profile,
     loading,
-    isAdmin: profile?.role === 'admin',
+    isAdmin: isUserAdmin,
     signOut,
   };
 
