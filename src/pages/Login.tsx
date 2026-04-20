@@ -26,6 +26,7 @@ export default function Login() {
     try {
       const result = await signInWithPopup(auth, provider);
       const user = result.user;
+      console.log("Logged in user:", user.email);
 
       // Create profile if it doesn't exist
       const profileRef = doc(db, 'users', user.uid);
@@ -43,9 +44,21 @@ export default function Login() {
       toast.success('Welcome back to Nilesh Store!');
       navigate(from, { replace: true });
     } catch (error: any) {
-      setError('Unable to authenticate with Google. Please try again.');
-      toast.error('Google login failed.');
-      console.error("Login error:", error);
+      console.error("Login error details:", error);
+      let message = 'Unable to authenticate with Google. Please try again.';
+      
+      if (error.code === 'auth/popup-blocked') {
+        message = 'The login popup was blocked. Please allow popups for this site.';
+      } else if (error.code === 'auth/cancelled-popup-request') {
+        message = 'The login attempt was interrupted.';
+      } else if (error.code === 'auth/operation-not-allowed') {
+        message = 'Google Sign-In is not enabled in the Firebase console. Please check your settings.';
+      } else if (error.message) {
+        message = `Auth Error: ${error.message}`;
+      }
+      
+      setError(message);
+      toast.error(message);
     } finally {
       setLoading(false);
     }
