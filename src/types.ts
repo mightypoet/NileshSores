@@ -71,6 +71,16 @@ export interface UserProfile {
   createdAt: any;
 }
 
+export interface Banner {
+  id: string;
+  title: string;
+  subtitle?: string;
+  image: string;
+  link?: string;
+  active: boolean;
+  order: number;
+}
+
 export interface CartItem {
   productId: string;
   name: string;

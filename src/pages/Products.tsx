@@ -1,6 +1,7 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
-import { products, categories } from '../data/mockData';
+import { dataService } from '../services/dataService';
+import { Product, Category } from '../types';
 import { motion, AnimatePresence } from 'motion/react';
 import { Search, Filter, SlidersHorizontal, Grid, List as ListIcon, Star, ShoppingCart, Heart, ChevronRight, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -11,10 +12,31 @@ import { toast } from 'sonner';
 export default function Products() {
   const [searchParams, setSearchParams] = useSearchParams();
   const { addItem } = useCart();
+  const [products, setProducts] = useState<Product[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState('featured');
   const [showFilters, setShowFilters] = useState(false);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+
+  useEffect(() => {
+    async function fetchData() {
+      try {
+        const [prods, cats] = await Promise.all([
+          dataService.getProducts(),
+          dataService.getCategories()
+        ]);
+        setProducts(prods);
+        setCategories(cats);
+      } catch (error) {
+        console.error("Error loading catalogue:", error);
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchData();
+  }, []);
 
   const selectedCategory = searchParams.get('category');
   const filterType = searchParams.get('filter');
@@ -60,6 +82,17 @@ export default function Products() {
   };
 
   const categoryName = categories.find(c => c.id === selectedCategory)?.name || 'All Products';
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <div className="flex flex-col items-center gap-4">
+          <div className="h-12 w-12 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+          <p className="text-sm font-bold text-zinc-400 uppercase tracking-widest text-center">Loading Catalogue...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="container mx-auto px-4 py-20">

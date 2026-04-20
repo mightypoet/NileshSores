@@ -1,24 +1,63 @@
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { motion } from 'motion/react';
-import { products, categories } from '../data/mockData';
+import { motion, AnimatePresence } from 'motion/react';
+import { products as mockProducts, categories as mockCategories } from '../data/mockData';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ChevronRight, ArrowRight, Star, ShoppingCart, Heart, Sparkles, TrendingUp, Zap, Gift, PenTool } from 'lucide-react';
 import { useCart } from '../hooks/useCart';
 import { toast } from 'sonner';
+import { dataService } from '../services/dataService';
+import { Product, Category, Banner } from '../types';
 
 export default function Home() {
   const { addItem } = useCart();
+  const [products, setProducts] = useState<Product[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [banners, setBanners] = useState<Banner[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [currentBanner, setCurrentBanner] = useState(0);
+
+  useEffect(() => {
+    async function fetchData() {
+      try {
+        const [prods, cats, bans] = await Promise.all([
+          dataService.getProducts(),
+          dataService.getCategories(),
+          dataService.getBanners()
+        ]);
+        setProducts(prods);
+        setCategories(cats);
+        setBanners(bans.filter(b => b.active));
+      } catch (error) {
+        console.error("Error fetching data:", error);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    fetchData();
+  }, []);
+
+  useEffect(() => {
+    if (banners.length > 1) {
+      const timer = setInterval(() => {
+        setCurrentBanner((prev) => (prev + 1) % banners.length);
+      }, 5000);
+      return () => clearInterval(timer);
+    }
+  }, [banners]);
+
   const bestSellers = products.filter(p => p.isBestSeller).slice(0, 8);
   
-  const collections = [
+  const featuredCollections = [
     { name: 'Inkredibles Series', image: 'https://cdn.shopify.com/s/files/1/0681/1510/3931/products/JumboNoteBookHardBound-1.jpg', desc: 'Creative tools for little hands' },
     { name: 'The Guardians', image: 'https://cdn.shopify.com/s/files/1/0681/1510/3931/products/EconamaCaseBoundA5Book_800x.jpg', desc: 'Elite gear for serious protection' },
     { name: 'Eco Warriors', image: 'https://cdn.shopify.com/s/files/1/0681/1510/3931/files/Mumbai-indians-Banner-Web_1.jpg', desc: 'Stationery for the environment' },
     { name: 'Art & Craft', image: 'https://cdn.shopify.com/s/files/1/0681/1510/3931/products/EconamaDrawingBook-3ARed_800x.jpg', desc: 'Unleash your imagination' },
   ];
 
-  const handleAddToCart = (product: any) => {
+  const handleAddToCart = (product: Product) => {
     addItem({
       productId: product.id,
       name: product.name,
@@ -38,74 +77,119 @@ export default function Home() {
           <div className="absolute bottom-20 left-20 w-80 h-80 bg-secondary/5 rounded-full blur-3xl animate-pulse delay-700" />
         </div>
         
-        <div className="container mx-auto px-4 relative z-10">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
-            <motion.div 
-              initial={{ opacity: 0, x: -50 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.8, ease: "easeOut" }}
-              className="space-y-10"
-            >
-              <div className="inline-flex items-center gap-2 px-4 py-2 bg-white rounded-full text-[10px] font-black uppercase tracking-[0.2em] shadow-sm border border-zinc-100">
-                <Sparkles className="h-3 w-3 text-accent" /> Premium Collection 2026
-              </div>
-              <h1 className="text-6xl md:text-8xl font-black text-zinc-900 leading-[1.05] tracking-tighter">
-                Every Idea <br />
-                <span className="text-primary italic">Starts Here.</span>
-              </h1>
-              <p className="text-xl text-zinc-500 leading-relaxed max-w-lg">
-                Explore premium stationery at Nilesh Store. From fine writing instruments to professional art supplies, we fuel your creativity.
-              </p>
-              <div className="flex flex-wrap gap-4">
-                <Link to="/products">
-                  <Button size="lg" className="rounded-full px-10 shadow-xl shadow-primary/20">Shop Now</Button>
-                </Link>
-                <Link to="/products">
-                  <Button variant="outline" size="lg" className="rounded-full px-10">View Categories</Button>
-                </Link>
-              </div>
-              <div className="flex items-center gap-10 pt-4">
-                <div className="flex flex-col">
-                  <span className="text-3xl font-black">24k+</span>
-                  <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Happy Artists</span>
-                </div>
-                <div className="flex flex-col">
-                  <span className="text-3xl font-black">1.5k+</span>
-                  <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Store Products</span>
-                </div>
-              </div>
-            </motion.div>
+        <div className="container mx-auto px-4 relative z-10 w-full h-full flex items-center">
+          <AnimatePresence mode="wait">
+            {banners.length > 0 ? (
+              banners.map((banner, idx) => idx === currentBanner && (
+                <motion.div 
+                  key={banner.id}
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 1 }}
+                  className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center w-full"
+                >
+                  <div className="space-y-10">
+                    <motion.div 
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.2 }}
+                      className="inline-flex items-center gap-2 px-4 py-2 bg-white rounded-full text-[10px] font-black uppercase tracking-[0.2em] shadow-sm border border-zinc-100"
+                    >
+                      <Sparkles className="h-3 w-3 text-accent" /> Featured Offer
+                    </motion.div>
+                    <motion.h1 
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.3 }}
+                      className="text-6xl md:text-8xl font-black text-zinc-900 leading-[1.05] tracking-tighter"
+                    >
+                      {banner.title.split(' ').map((word, i) => (
+                        <React.Fragment key={i}>
+                          {i === 2 ? <br /> : ' '}
+                          {word}
+                        </React.Fragment>
+                      ))}
+                    </motion.h1>
+                    <motion.p 
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.4 }}
+                      className="text-xl text-zinc-500 leading-relaxed max-w-lg"
+                    >
+                      {banner.subtitle || "Discover premium stationery at Nilesh Store. From fine writing instruments to professional art supplies, we fuel your creativity."}
+                    </motion.p>
+                    <motion.div 
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.5 }}
+                      className="flex flex-wrap gap-4"
+                    >
+                      <Link to={banner.link || "/products"}>
+                        <Button size="lg" className="rounded-full px-10 shadow-xl shadow-primary/20">Shop Now</Button>
+                      </Link>
+                      <Link to="/products">
+                        <Button variant="outline" size="lg" className="rounded-full px-10">View Categories</Button>
+                      </Link>
+                    </motion.div>
+                  </div>
 
-            <motion.div 
-              initial={{ opacity: 0, scale: 0.8, rotate: -5 }}
-              animate={{ opacity: 1, scale: 1, rotate: 0 }}
-              transition={{ duration: 1, ease: "easeOut" }}
-              className="relative"
-            >
-              <div className="relative z-10 aspect-square rounded-[3rem] overflow-hidden shadow-2xl skew-y-2 group">
-                <img 
-                  src="https://econama.in/cdn/shop/files/Econama_book_mockup.png?v=1737547794&width=750" 
-                  alt="Nilesh Store Stationery" 
-                  className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-700" 
-                  referrerPolicy="no-referrer"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />
+                  <motion.div 
+                    initial={{ opacity: 0, scale: 0.8, rotate: -5 }}
+                    animate={{ opacity: 1, scale: 1, rotate: 0 }}
+                    transition={{ duration: 1, ease: "easeOut" }}
+                    className="relative"
+                  >
+                    <div className="relative z-10 aspect-square rounded-[3rem] overflow-hidden shadow-2xl skew-y-2 group">
+                      <img 
+                        src={banner.image} 
+                        alt={banner.title} 
+                        className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-700" 
+                        referrerPolicy="no-referrer"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />
+                    </div>
+                  </motion.div>
+                </motion.div>
+              ))
+            ) : (
+              // Fallback to default if no banners
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center w-full">
+                <div className="space-y-10">
+                  <div className="inline-flex items-center gap-2 px-4 py-2 bg-white rounded-full text-[10px] font-black uppercase tracking-[0.2em] shadow-sm border border-zinc-100">
+                    <Sparkles className="h-3 w-3 text-accent" /> Premium Collection 2026
+                  </div>
+                  <h1 className="text-6xl md:text-8xl font-black text-zinc-900 leading-[1.05] tracking-tighter">
+                    Every Idea <br />
+                    <span className="text-primary italic">Starts Here.</span>
+                  </h1>
+                  <p className="text-xl text-zinc-500 leading-relaxed max-w-lg">
+                    Explore premium stationery at Nilesh Store. From fine writing instruments to professional art supplies, we fuel your creativity.
+                  </p>
+                  <div className="flex flex-wrap gap-4">
+                    <Link to="/products">
+                      <Button size="lg" className="rounded-full px-10 shadow-xl shadow-primary/20">Shop Now</Button>
+                    </Link>
+                    <Link to="/products">
+                      <Button variant="outline" size="lg" className="rounded-full px-10">View Categories</Button>
+                    </Link>
+                  </div>
+                </div>
+
+                <div className="relative">
+                  <div className="relative z-10 aspect-square rounded-[3rem] overflow-hidden shadow-2xl skew-y-2 group">
+                    <img 
+                      src="https://econama.in/cdn/shop/files/Econama_book_mockup.png?v=1737547794&width=750" 
+                      alt="Nilesh Store Stationery" 
+                      className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-700" 
+                      referrerPolicy="no-referrer"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />
+                  </div>
+                </div>
               </div>
-              <motion.div 
-                animate={{ y: [0, -20, 0] }}
-                transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-                className="absolute -top-10 -right-10 z-20 bg-white p-6 rounded-3xl shadow-2xl border border-zinc-50 flex items-center gap-4"
-              >
-                <div className="h-12 w-12 rounded-full bg-accent flex items-center justify-center text-white">
-                  <Zap className="h-6 w-6" />
-                </div>
-                <div>
-                  <div className="text-xs font-black uppercase tracking-widest text-zinc-400">Flash Sale</div>
-                  <div className="text-lg font-black tracking-tight">Flat 20% OFF</div>
-                </div>
-              </motion.div>
-            </motion.div>
-          </div>
+            )}
+          </AnimatePresence>
         </div>
       </section>
 
@@ -238,7 +322,7 @@ export default function Home() {
             <h3 className="text-5xl md:text-6xl font-black tracking-tighter">Our Collections</h3>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-            {collections.map((col, idx) => (
+            {featuredCollections.map((col, idx) => (
               <Link key={idx} to="/products" className="group relative block aspect-[4/5] rounded-[3rem] overflow-hidden">
                 <img src={col.image} alt={col.name} className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-110" />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent p-10 flex flex-col justify-end text-white">

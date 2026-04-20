@@ -1,7 +1,6 @@
 import React, { useState, useEffect, createContext, useContext } from 'react';
-import { auth, db } from '../lib/firebase';
-import { onAuthStateChanged, User } from 'firebase/auth';
-import { doc, onSnapshot } from 'firebase/firestore';
+import { supabase } from '../lib/supabase';
+import { User } from '@supabase/supabase-js';
 import { UserProfile } from '../types';
 
 interface AuthContextType {
@@ -9,6 +8,7 @@ interface AuthContextType {
   profile: UserProfile | null;
   loading: boolean;
   isAdmin: boolean;
+  signOut: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType>({
@@ -16,6 +16,7 @@ const AuthContext = createContext<AuthContextType>({
   profile: null,
   loading: true,
   isAdmin: false,
+  signOut: async () => {},
 });
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
@@ -24,37 +25,60 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      setUser(user);
-      if (!user) {
+    // Check active sessions and sets the user
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUser(session?.user ?? null);
+      if (!session?.user) setLoading(false);
+    });
+
+    // Listen for changes on auth state (signed in, signed out, etc.)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
+      setUser(session?.user ?? null);
+      if (!session) {
         setProfile(null);
         setLoading(false);
       }
     });
 
-    return () => unsubscribe();
+    return () => {
+      subscription.unsubscribe();
+    };
   }, []);
 
   useEffect(() => {
     if (user) {
-      const unsubscribe = onSnapshot(doc(db, 'users', user.uid), (doc) => {
-        if (doc.exists()) {
-          setProfile({ id: doc.id, ...doc.data() } as UserProfile);
+      const fetchProfile = async () => {
+        try {
+          const { data, error } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('id', user.id)
+            .single();
+
+          if (error) {
+            console.error("Error fetching user profile:", error);
+          } else {
+            setProfile({ id: data.id, ...data } as UserProfile);
+          }
+        } finally {
+          setLoading(false);
         }
-        setLoading(false);
-      }, (error) => {
-        console.error("Error fetching user profile:", error);
-        setLoading(false);
-      });
-      return () => unsubscribe();
+      };
+      
+      fetchProfile();
     }
   }, [user]);
+
+  const signOut = async () => {
+    await supabase.auth.signOut();
+  };
 
   const value = {
     user,
     profile,
     loading,
     isAdmin: profile?.role === 'admin',
+    signOut,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

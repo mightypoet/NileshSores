@@ -1,6 +1,6 @@
 {
   "name": "Nilesh Store - Premium Stationery",
-  "description": "Nilesh Store is a modern ecommerce stationery shop in Vadodara, offering a wide range of premium stationery, art supplies, and school kits inspired by DOMS India's design.",
+  "description": "Nilesh Store is a premium stationery e-commerce platform integrated with Supabase for dynamic product management, featuring advanced filtering, real-time cart, and secure user authentication.",
   "requestFramePermissions": [],
   "majorCapabilities": []
 }

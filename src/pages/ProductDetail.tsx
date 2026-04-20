@@ -1,6 +1,7 @@
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { useState, useMemo } from 'react';
-import { products } from '../data/mockData';
+import { useState, useMemo, useEffect } from 'react';
+import { dataService } from '../services/dataService';
+import { Product } from '../types';
 import { motion } from 'motion/react';
 import { ShoppingCart, Star, Heart, ArrowLeft, Truck, ShieldCheck, RotateCcw, Share2, Check, Minus, Plus, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -12,10 +13,43 @@ export default function ProductDetail() {
   const { slug } = useParams();
   const navigate = useNavigate();
   const { addItem } = useCart();
+  const [product, setProduct] = useState<Product | null>(null);
+  const [relatedProducts, setRelatedProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
   const [quantity, setQuantity] = useState(1);
   const [activeImage, setActiveImage] = useState(0);
 
-  const product = useMemo(() => products.find(p => p.slug === slug), [slug]);
+  useEffect(() => {
+    async function fetchProduct() {
+      if (!slug) return;
+      setLoading(true);
+      try {
+        const prod = await dataService.getProductBySlug(slug);
+        setProduct(prod);
+        
+        if (prod) {
+          const allProducts = await dataService.getProducts();
+          const related = allProducts
+            .filter(p => p.categoryId === prod.categoryId && p.id !== prod.id)
+            .slice(0, 4);
+          setRelatedProducts(related);
+        }
+      } catch (error) {
+        console.error("Error fetching product:", error);
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchProduct();
+  }, [slug]);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <div className="h-12 w-12 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
 
   if (!product) {
     return (
@@ -25,10 +59,6 @@ export default function ProductDetail() {
       </div>
     );
   }
-
-  const relatedProducts = products
-    .filter(p => p.categoryId === product.categoryId && p.id !== product.id)
-    .slice(0, 4);
 
   const handleAddToCart = () => {
     addItem({

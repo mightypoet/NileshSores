@@ -1,11 +1,9 @@
 import { useState } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
-import { auth, db } from '../lib/firebase';
-import { signInWithPopup, GoogleAuthProvider } from 'firebase/auth';
-import { doc, setDoc, getDoc } from 'firebase/firestore';
+import { supabase } from '../lib/supabase';
 import { motion } from 'motion/react';
 import { Button } from '@/components/ui/button';
-import { LogIn, Github, Mail, ShieldCheck, PenTool, Sparkles, AlertCircle } from 'lucide-react';
+import { ShieldCheck, PenTool, Sparkles, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function Login() {
@@ -18,34 +16,23 @@ export default function Login() {
   const handleGoogleLogin = async () => {
     setLoading(true);
     setError(null);
-    const provider = new GoogleAuthProvider();
     
     try {
-      const result = await signInWithPopup(auth, provider);
-      const user = result.user;
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: `${window.location.origin}/account`,
+        }
+      });
 
-      // Check if profile exists
-      const profileDoc = await getDoc(doc(db, 'users', user.uid));
-      if (!profileDoc.exists()) {
-        await setDoc(doc(db, 'users', user.uid), {
-          displayName: user.displayName,
-          email: user.email,
-          photoURL: user.photoURL,
-          role: 'user',
-          createdAt: new Date().toISOString()
-        });
-      }
-
-      toast.success(`Welcome back, ${user.displayName?.split(' ')[0]}!`);
-      navigate(from, { replace: true });
+      if (error) throw error;
+      
+      // Note: redirectTo will handle the navigation after successful login
+      toast.info('Redirecting to Google login...');
     } catch (error: any) {
-      if (error.code === 'auth/popup-closed-by-user') {
-        setError('Login cancelled. Please keep the window open to continue.');
-        toast.error('The login window was closed before completion.');
-      } else {
-        setError('Unable to authenticate. Please try again later.');
-        console.error("Login error:", error);
-      }
+      setError('Unable to authenticate with Google. Please try again.');
+      toast.error('Gogle login failed.');
+      console.error("Login error:", error);
     } finally {
       setLoading(false);
     }
