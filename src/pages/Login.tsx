@@ -52,11 +52,12 @@ export default function Login() {
       } else if (error.code === 'auth/cancelled-popup-request') {
         message = 'The login attempt was interrupted.';
       } else if (error.code === 'auth/operation-not-allowed') {
-        message = 'Google Sign-In is not enabled in the Firebase console. Please check your settings.';
+        message = 'Google Sign-In is not enabled in the Firebase console. Please go to Authentication > Sign-in method and enable Google.';
       } else if (error.code === 'auth/unauthorized-domain') {
-        message = 'This domain is not authorized in Firebase. Please add this URL to the "Authorized domains" list in your Firebase Console (Authentication > Settings).';
+        const domain = window.location.hostname;
+        message = `This domain (${domain}) is not authorized. Please add it to the "Authorized domains" list in your Firebase Console project (nileshstores-12757) under Authentication > Settings.`;
       } else if (error.message) {
-        message = `Auth Error: ${error.message}`;
+        message = `Auth Error (${error.code || 'unknown'}): ${error.message}`;
       }
       
       setError(message);
@@ -96,6 +97,16 @@ export default function Login() {
           <div className="text-center space-y-3 mb-12">
             <h1 className="text-4xl font-black tracking-tighter leading-none italic uppercase">Unlock Your <span className="text-zinc-300">Space</span></h1>
             <p className="text-sm font-medium text-zinc-500">Sign in to sync your creative basket & orders.</p>
+            <div className="flex flex-col items-center gap-2 mt-4">
+              <a 
+                href={window.location.href} 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="text-[10px] font-bold text-indigo-600 hover:underline uppercase tracking-widest"
+              >
+                Having trouble? Open in a New Tab
+              </a>
+            </div>
           </div>
 
           {error && (
