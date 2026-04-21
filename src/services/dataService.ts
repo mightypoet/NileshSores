@@ -222,11 +222,15 @@ export const dataService = {
       const formData = new FormData();
       formData.append('file', file);
 
-      const response = await fetch('/api/upload', {
+      console.log(`Sending upload request to: /api/product-images/upload`);
+      const response = await fetch('/api/product-images/upload', {
         method: 'POST',
         body: formData,
         signal: controller.signal
       });
+
+      console.log(`Response Status: ${response.status}`);
+      console.log(`Response Headers:`, Object.fromEntries(response.headers.entries()));
 
       clearTimeout(timeoutId);
 

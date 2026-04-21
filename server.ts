@@ -33,14 +33,14 @@ async function startServer() {
   });
 
   // Vercel Blob Upload Route
-  app.post("/api/upload", (req, res, next) => {
+  app.post("/api/product-images/upload", (req, res, next) => {
     // Add specific logging for upload attempt
-    console.log("POST /api/upload - Multipart request received");
+    console.log("POST /api/product-images/upload - Multipart request received");
     next();
   }, upload.single("file"), async (req: any, res) => {
     try {
       if (!req.file) {
-        console.error("Upload Error: No file in request. Body:", req.body);
+        console.error("Upload Error: No file in request. Body keys:", Object.keys(req.body));
         return res.status(400).json({ error: "No file uploaded. Please ensure the 'file' field is present in the multipart form." });
       }
 
