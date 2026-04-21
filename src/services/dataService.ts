@@ -1,226 +1,194 @@
-import { db, storage } from '../lib/firebase';
-import { 
-  collection, 
-  getDocs, 
-  addDoc, 
-  updateDoc, 
-  deleteDoc, 
-  doc, 
-  query, 
-  where, 
-  orderBy, 
-  getDoc,
-  serverTimestamp,
-  Timestamp
-} from 'firebase/firestore';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { supabase } from '../lib/supabase';
 import { Product, Category, Banner, Order, UserProfile } from '../types';
 import { products as mockProducts, categories as mockCategories } from '../data/mockData';
+import { toast } from 'sonner';
 
 export const dataService = {
+  // PRODUCTS
   async getProducts(): Promise<Product[]> {
     try {
-      const q = query(collection(db, 'products'), orderBy('createdAt', 'desc'));
-      const querySnapshot = await getDocs(q);
-      const products = querySnapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      })) as Product[];
+      const { data, error } = await supabase
+        .from('products')
+        .select('*')
+        .order('id', { ascending: false });
       
-      if (products.length > 0) return products;
+      if (error) throw error;
+      if (data && data.length > 0) return data as Product[];
       return mockProducts;
     } catch (error) {
-      console.error("Error fetching products:", error);
+      console.error("Error fetching products from Supabase:", error);
       return mockProducts;
     }
   },
 
   async createProduct(product: Partial<Product>): Promise<Product | null> {
     try {
-      const docRef = await addDoc(collection(db, 'products'), {
-        ...product,
-        createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp()
-      });
-      const newDoc = await getDoc(docRef);
-      return { id: docRef.id, ...newDoc.data() } as Product;
+      const { data, error } = await supabase
+        .from('products')
+        .insert([product])
+        .select()
+        .single();
+      
+      if (error) throw error;
+      return data as Product;
     } catch (error) {
-      console.error("Error creating product:", error);
+      console.error("Error creating product in Supabase:", error);
       return null;
     }
   },
 
   async updateProduct(id: string, updates: Partial<Product>): Promise<Product | null> {
     try {
-      const docRef = doc(db, 'products', id);
-      await updateDoc(docRef, {
-        ...updates,
-        updatedAt: serverTimestamp()
-      });
-      const updatedDoc = await getDoc(docRef);
-      return { id: docRef.id, ...updatedDoc.data() } as Product;
+      const { data, error } = await supabase
+        .from('products')
+        .update(updates)
+        .eq('id', id)
+        .select()
+        .single();
+      
+      if (error) throw error;
+      return data as Product;
     } catch (error) {
-      console.error("Error updating product:", error);
+      console.error("Error updating product in Supabase:", error);
       return null;
     }
   },
 
   async deleteProduct(id: string): Promise<boolean> {
     try {
-      await deleteDoc(doc(db, 'products', id));
+      const { error } = await supabase
+        .from('products')
+        .delete()
+        .eq('id', id);
+      
+      if (error) throw error;
       return true;
     } catch (error) {
-      console.error("Error deleting product:", error);
+      console.error("Error deleting product from Supabase:", error);
       return false;
     }
   },
 
+  // CATEGORIES
   async getCategories(): Promise<Category[]> {
     try {
-      const q = query(collection(db, 'categories'), orderBy('name'));
-      const querySnapshot = await getDocs(q);
-      const categories = querySnapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      })) as Category[];
+      const { data, error } = await supabase
+        .from('categories')
+        .select('*')
+        .order('name');
       
-      if (categories.length > 0) return categories;
+      if (error) throw error;
+      if (data && data.length > 0) return data as Category[];
       return mockCategories;
     } catch (error) {
-      console.error("Error fetching categories:", error);
+      console.error("Error fetching categories from Supabase:", error);
       return mockCategories;
     }
   },
 
   async createCategory(category: Partial<Category>): Promise<Category | null> {
     try {
-      const docRef = await addDoc(collection(db, 'categories'), category);
-      const newDoc = await getDoc(docRef);
-      return { id: docRef.id, ...newDoc.data() } as Category;
+      const { data, error } = await supabase
+        .from('categories')
+        .insert([category])
+        .select()
+        .single();
+      
+      if (error) throw error;
+      return data as Category;
     } catch (error) {
-      console.error("Error creating category:", error);
+      console.error("Error creating category in Supabase:", error);
       return null;
     }
   },
 
   async updateCategory(id: string, updates: Partial<Category>): Promise<Category | null> {
     try {
-      const docRef = doc(db, 'categories', id);
-      await updateDoc(docRef, updates);
-      const updatedDoc = await getDoc(docRef);
-      return { id: docRef.id, ...updatedDoc.data() } as Category;
+      const { data, error } = await supabase
+        .from('categories')
+        .update(updates)
+        .eq('id', id)
+        .select()
+        .single();
+      
+      if (error) throw error;
+      return data as Category;
     } catch (error) {
-      console.error("Error updating category:", error);
+      console.error("Error updating category in Supabase:", error);
       return null;
     }
   },
 
   async deleteCategory(id: string): Promise<boolean> {
     try {
-      await deleteDoc(doc(db, 'categories', id));
+      const { error } = await supabase
+        .from('categories')
+        .delete()
+        .eq('id', id);
+      
+      if (error) throw error;
       return true;
     } catch (error) {
-      console.error("Error deleting category:", error);
+      console.error("Error deleting category from Supabase:", error);
       return false;
     }
   },
 
+  // BANNERS
   async getBanners(): Promise<Banner[]> {
     try {
-      const q = query(collection(db, 'banners'), orderBy('order'));
-      const querySnapshot = await getDocs(q);
-      return querySnapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      })) as Banner[];
+      const { data, error } = await supabase
+        .from('banners')
+        .select('*')
+        .order('order');
+      
+      if (error) throw error;
+      return data as Banner[];
     } catch (error) {
-      console.error("Error fetching banners:", error);
+      console.error("Error fetching banners from Supabase:", error);
       return [];
     }
   },
 
-  async createBanner(banner: Partial<Banner>): Promise<Banner | null> {
+  // UPLOADS (Vercel Blob via Proxy)
+  async uploadImage(file: File, _bucket: string): Promise<string | null> {
+    console.log(`Starting image upload to Vercel Blob, file: ${file.name}`);
     try {
-      const docRef = await addDoc(collection(db, 'banners'), banner);
-      const newDoc = await getDoc(docRef);
-      return { id: docRef.id, ...newDoc.data() } as Banner;
-    } catch (error) {
-      console.error("Error creating banner:", error);
-      return null;
-    }
-  },
+      const formData = new FormData();
+      formData.append('file', file);
 
-  async updateBanner(id: string, updates: Partial<Banner>): Promise<Banner | null> {
-    try {
-      const docRef = doc(db, 'banners', id);
-      await updateDoc(docRef, updates);
-      const updatedDoc = await getDoc(docRef);
-      return { id: docRef.id, ...updatedDoc.data() } as Banner;
-    } catch (error) {
-      console.error("Error updating banner:", error);
-      return null;
-    }
-  },
+      const response = await fetch('/api/upload', {
+        method: 'POST',
+        body: formData,
+      });
 
-  async deleteBanner(id: string): Promise<boolean> {
-    try {
-      await deleteDoc(doc(db, 'banners', id));
-      return true;
-    } catch (error) {
-      console.error("Error deleting banner:", error);
-      return false;
-    }
-  },
-
-  async uploadImage(file: File, bucket: string): Promise<string | null> {
-    console.log(`Starting image upload to bucket: ${bucket}, file: ${file.name}`);
-    try {
-      // Validate storage initialization
-      if (!storage) {
-        throw new Error("Firebase Storage is not initialized. Please check your firebase.ts configuration.");
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to upload image');
       }
 
-      const storageRef = ref(storage, `${bucket}/${Date.now()}-${file.name}`);
-      console.log("Storage reference created, starting uploadBytes...");
-      
-      const snapshot = await uploadBytes(storageRef, file);
-      console.log("Upload successful, fetching download URL...");
-      
-      const url = await getDownloadURL(snapshot.ref);
-      console.log("Download URL obtained:", url);
+      const { url } = await response.json();
+      console.log("Vercel Blob upload successful:", url);
       return url;
     } catch (error: any) {
-      console.error("Error uploading image:", error);
-      
-      // Provide more specific error info if possible
-      let errorMessage = error.message || "Unknown error";
-      if (error.code === 'storage/unauthorized') {
-        errorMessage = "Permission denied. Please check your Firebase Storage security rules.";
-      } else if (error.code === 'storage/canceled') {
-        errorMessage = "Upload was canceled.";
-      } else if (error.code === 'storage/unknown') {
-        errorMessage = "An unknown error occurred. This might be due to a network issue or Storage service not being enabled.";
-      }
-      
-      toast.error(`Upload Error: ${errorMessage}`);
+      console.error("Error uploading image to Vercel Blob:", error);
+      toast.error(`Upload Error: ${error.message || 'Unknown error'}`);
       return null;
     }
   },
 
   async getProductBySlug(slug: string): Promise<Product | null> {
     try {
-      const q = query(collection(db, 'products'), where('slug', '==', slug));
-      const querySnapshot = await getDocs(q);
+      const { data, error } = await supabase
+        .from('products')
+        .select('*')
+        .eq('slug', slug)
+        .single();
       
-      if (querySnapshot.empty) {
-        const mockProduct = mockProducts.find(p => p.slug === slug);
-        return mockProduct || null;
-      }
-      
-      const doc = querySnapshot.docs[0];
-      return { id: doc.id, ...doc.data() } as Product;
+      if (error) throw error;
+      return data as Product;
     } catch (error) {
-      console.error("Error fetching product by slug:", error);
+      console.error("Error fetching product by slug from Supabase:", error);
       const mockProduct = mockProducts.find(p => p.slug === slug);
       return mockProduct || null;
     }
@@ -229,25 +197,30 @@ export const dataService = {
   // Order Management
   async getOrders(): Promise<Order[]> {
     try {
-      const q = query(collection(db, 'orders'), orderBy('createdAt', 'desc'));
-      const querySnapshot = await getDocs(q);
-      return querySnapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      })) as Order[];
+      const { data, error } = await supabase
+        .from('orders')
+        .select('*')
+        .order('id', { ascending: false });
+      
+      if (error) throw error;
+      return data as Order[];
     } catch (error) {
-      console.error("Error fetching orders:", error);
+      console.error("Error fetching orders from Supabase:", error);
       return [];
     }
   },
 
   async updateOrderStatus(id: string, status: Order['status']): Promise<boolean> {
     try {
-      const docRef = doc(db, 'orders', id);
-      await updateDoc(docRef, { status });
+      const { error } = await supabase
+        .from('orders')
+        .update({ status })
+        .eq('id', id);
+      
+      if (error) throw error;
       return true;
     } catch (error) {
-      console.error("Error updating order status:", error);
+      console.error("Error updating order status in Supabase:", error);
       return false;
     }
   },
@@ -255,25 +228,30 @@ export const dataService = {
   // User Management
   async getUsers(): Promise<UserProfile[]> {
     try {
-      const q = query(collection(db, 'users'), orderBy('createdAt', 'desc'));
-      const querySnapshot = await getDocs(q);
-      return querySnapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      })) as UserProfile[];
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .order('id', { ascending: false });
+      
+      if (error) throw error;
+      return data as UserProfile[];
     } catch (error) {
-      console.error("Error fetching users:", error);
+      console.error("Error fetching users from Supabase:", error);
       return [];
     }
   },
 
   async updateUserRole(id: string, role: 'customer' | 'admin'): Promise<boolean> {
     try {
-      const docRef = doc(db, 'users', id);
-      await updateDoc(docRef, { role });
+      const { error } = await supabase
+        .from('profiles')
+        .update({ role })
+        .eq('id', id);
+      
+      if (error) throw error;
       return true;
     } catch (error) {
-      console.error("Error updating user role:", error);
+      console.error("Error updating user role in Supabase:", error);
       return false;
     }
   }
