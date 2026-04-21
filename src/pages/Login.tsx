@@ -72,8 +72,13 @@ export default function Login() {
         className="w-full max-w-lg"
       >
         <div className="bg-white rounded-[3.5rem] p-12 shadow-2xl border border-zinc-100 flex flex-col items-center">
-          <div className="h-20 w-20 rounded-[2rem] bg-primary flex items-center justify-center text-white shadow-xl shadow-primary/20 mb-8 rotate-3">
-            <span className="text-4xl font-black italic">N</span>
+          <div className="h-20 w-auto flex items-center justify-center mb-8">
+            <img 
+              src="https://zonyxuymmdtacejy.private.blob.vercel-storage.com/pomelli_photoshoot_image_1_1_0420.png" 
+              alt="Logo" 
+              className="h-full w-auto object-contain"
+              referrerPolicy="no-referrer"
+            />
           </div>
           
           <div className="text-center space-y-3 mb-12">

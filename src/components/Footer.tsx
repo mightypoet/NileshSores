@@ -9,9 +9,14 @@ const Footer = () => {
       <div className="container mx-auto px-4 pt-24 pb-12 relative z-10">
         <div className="grid grid-cols-1 gap-16 md:grid-cols-4">
           <div className="space-y-8">
-            <Link to="/" className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-lg bg-indigo-600 flex items-center justify-center text-white">
-                <span className="text-xl font-black italic">N</span>
+            <Link to="/" className="flex items-center gap-3 group">
+              <div className="h-10 w-auto flex items-center justify-center transition-transform group-hover:scale-105">
+                <img 
+                  src="https://zonyxuymmdtacejy.private.blob.vercel-storage.com/pomelli_photoshoot_image_1_1_0420.png" 
+                  alt="Logo" 
+                  className="h-full w-auto object-contain brightness-0 invert"
+                  referrerPolicy="no-referrer"
+                />
               </div>
               <div className="flex flex-col leading-none">
                 <span className="text-xl font-black tracking-tighter italic">NILESH STORES</span>

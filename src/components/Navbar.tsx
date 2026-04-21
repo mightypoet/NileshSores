@@ -64,11 +64,16 @@ const Navbar = () => {
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between">
           {/* Logo */}
-          <Link to="/" className="flex items-center gap-3 group">
-            <div className="h-10 md:h-12 w-10 md:w-12 rounded-xl bg-indigo-600 flex items-center justify-center text-white shadow-lg group-hover:rotate-6 transition-transform">
-              <span className="text-xl md:text-2xl font-black italic">N</span>
+          <Link to="/" className="flex items-center gap-4 group">
+            <div className="h-10 md:h-16 w-auto flex items-center justify-center transition-all duration-300 group-hover:scale-110">
+              <img 
+                src="https://zonyxuymmdtacejy.private.blob.vercel-storage.com/pomelli_photoshoot_image_1_1_0420.png" 
+                alt="Logo" 
+                className="h-full w-auto object-contain drop-shadow-sm"
+                referrerPolicy="no-referrer"
+              />
             </div>
-            <div className="flex flex-col">
+            <div className="flex flex-col border-l border-zinc-100 pl-4">
               <span className="text-xl md:text-2xl font-black tracking-tighter text-zinc-900 leading-tight uppercase italic">NILESH <span className="text-indigo-600">STORES</span></span>
               <span className="text-[8px] md:text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-400">Premium Stationery</span>
             </div>
@@ -192,8 +197,13 @@ const Navbar = () => {
             <div className="flex flex-col h-full">
               <div className="p-4 border-b flex justify-between items-center">
                 <Link to="/" onClick={() => setIsMenuOpen(false)} className="flex items-center gap-2">
-                  <div className="h-8 w-8 rounded-lg bg-indigo-600 flex items-center justify-center text-white">
-                    <span className="text-lg font-black italic">N</span>
+                  <div className="h-10 w-auto flex items-center">
+                    <img 
+                      src="https://zonyxuymmdtacejy.private.blob.vercel-storage.com/pomelli_photoshoot_image_1_1_0420.png" 
+                      alt="Logo" 
+                      className="h-full w-auto object-contain"
+                      referrerPolicy="no-referrer"
+                    />
                   </div>
               <span className="text-xl font-black tracking-tighter italic uppercase">NILESH <span className="text-indigo-600">STORES</span></span>
                 </Link>

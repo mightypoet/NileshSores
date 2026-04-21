@@ -1,8 +1,11 @@
 import { initializeApp } from 'firebase/app';
-import { getAuth } from 'firebase/auth';
+import { getAuth, onAuthStateChanged } from 'firebase/auth';
 import { getFirestore, doc, getDocFromServer } from 'firebase/firestore';
 import { getStorage } from 'firebase/storage';
-import firebaseConfig from '../../firebase-applet-config.json';
+import firebaseConfigData from '../../firebase-applet-config.json';
+
+// Type assertion for config with optional firestoreDatabaseId
+const firebaseConfig = firebaseConfigData as any;
 
 const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
