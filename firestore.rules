@@ -1,96 +1,107 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // ===============================================================
-    // Assumed Data Model
-    // ===============================================================
-    //
-    // Collection: categories
-    // Fields: name (string), slug (string), image (string), parentId (string), sortOrder (number)
-    //
-    // Collection: products
-    // Fields: name (string), slug (string), description (string), price (number), mrp (number), 
-    //         gstRate (number), sku (string), stock (number), images (list), categoryId (string), 
-    //         status (string), createdAt (timestamp), updatedAt (timestamp)
-    //
-    // Collection: orders
-    // Fields: orderNumber (string), userId (string), status (string), total (number), 
-    //         gstAmount (number), shippingCharge (number), grandTotal (number), 
-    //         paymentStatus (string), paymentMethod (string), shippingAddress (map), createdAt (timestamp)
-    //
-    // Collection: users
-    // Fields: name (string), email (string), phone (string), role (string), createdAt (timestamp)
-    //
-    // ===============================================================
-
-    // ===============================================================
-    // Helper Functions
-    // ===============================================================
     
-    function isAuthenticated() {
-      return request.auth != null;
+    // --- GLOBAL HELPERS ---
+    function isSignedIn() { return request.auth != null; }
+    function isVerified() { return isSignedIn() && request.auth.token.email_verified == true; }
+    function isValidId(id) { return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$'); }
+    function incoming() { return request.resource.data; }
+    function existing() { return resource.data; }
+    
+    // Admin check: bootstrapped with owner email or role lookup
+    function isAdmin() { 
+      return isSignedIn() && (
+        request.auth.token.email == 'rohan00as@gmail.com' ||
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin'
+      );
+    }
+    
+    function isOwner(userId) { return isSignedIn() && request.auth.uid == userId; }
+
+    // Default deny
+    match /{document=**} {
+      allow read, write: if false;
     }
 
-    function isOwner(userId) {
-      return isAuthenticated() && request.auth.uid == userId;
-    }
-
-    function isAdmin() {
-      return isAuthenticated() &&
-        (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin' ||
-          (request.auth.token.email == "storesnilesh@gmail.com" && request.auth.token.email_verified == true));
-    }
-
-    function isValidCategory(data) {
-      return data.name is string && data.name.size() > 0 && data.name.size() < 100 &&
-             data.slug is string && data.slug.size() > 0 && data.slug.size() < 100;
-    }
-
-    function isValidProduct(data) {
-      return data.name is string && data.name.size() > 0 && data.name.size() < 200 &&
-             data.price is number && data.price >= 0 &&
-             data.categoryId is string &&
-             data.status in ['active', 'draft', 'archived'];
-    }
-
-    function isValidOrder(data) {
-      return data.orderNumber is string &&
-             data.userId == request.auth.uid &&
-             data.grandTotal is number && data.grandTotal >= 0 &&
-             data.status in ['pending', 'processing', 'shipped', 'delivered', 'cancelled'];
-    }
-
-    function isValidUser(data) {
-      return data.role in ['customer', 'admin'] &&
-             (data.email == null || (data.email is string && data.email.matches("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$")));
-    }
-
-    // ===============================================================
-    // Rules
-    // ===============================================================
-
-    match /categories/{categoryId} {
-      allow read: if true;
-      allow write: if isAdmin() && isValidCategory(request.resource.data);
-    }
-
+    // --- PRODUCTS ---
     match /products/{productId} {
       allow read: if true;
-      allow write: if isAdmin() && isValidProduct(request.resource.data);
+      allow create: if isAdmin() && isValidProduct(incoming());
+      allow update: if isAdmin() && isValidProduct(incoming());
+      allow delete: if isAdmin();
+      
+      function isValidProduct(p) {
+        return p.keys().hasAll(['name', 'price', 'image', 'slug']) &&
+               p.name is string && p.name.size() > 0 && p.name.size() < 200 &&
+               p.price is number && p.price >= 0 &&
+               p.image is string && p.image.size() > 0 &&
+               p.slug is string && p.slug.matches('^[a-z0-9-]+$') &&
+               (!('description' in p) || p.description is string) &&
+               (!('category' in p) || p.category is string) &&
+               (!('stock' in p) || p.stock is number);
+      }
     }
 
+    // --- CATEGORIES ---
+    match /categories/{categoryId} {
+      allow read: if true;
+      allow create: if isAdmin() && isValidCategory(incoming());
+      allow update: if isAdmin() && isValidCategory(incoming());
+      allow delete: if isAdmin();
+      
+      function isValidCategory(c) {
+        return c.keys().hasAll(['name', 'image']) &&
+               c.name is string && c.name.size() > 0 &&
+               c.image is string && c.image.size() > 0;
+      }
+    }
+
+    // --- BANNERS ---
+    match /banners/{bannerId} {
+      allow read: if true;
+      allow create: if isAdmin() && isValidBanner(incoming());
+      allow update: if isAdmin() && isValidBanner(incoming());
+      allow delete: if isAdmin();
+      
+      function isValidBanner(b) {
+        return b.keys().hasAll(['image', 'order']) &&
+               b.image is string && b.order is number;
+      }
+    }
+
+    // --- ORDERS ---
     match /orders/{orderId} {
-      allow read: if isOwner(resource.data.userId) || isAdmin();
-      allow create: if isAuthenticated() && isValidOrder(request.resource.data);
-      allow update: if isAdmin() || (isOwner(resource.data.userId) && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status']) && request.resource.data.status == 'cancelled');
+      allow get: if isOwner(existing().userId) || isAdmin();
+      allow list: if isSignedIn() && (resource.data.userId == request.auth.uid || isAdmin());
+      allow create: if isVerified() && isValidOrder(incoming()) && incoming().userId == request.auth.uid;
+      allow update: if isAdmin() && isValidOrder(incoming()) && (
+        incoming().diff(existing()).affectedKeys().hasOnly(['status', 'updatedAt'])
+      );
+      
+      function isValidOrder(o) {
+        return o.keys().hasAll(['userId', 'items', 'total', 'status', 'createdAt']) &&
+               o.userId is string &&
+               o.items is list && o.items.size() > 0 &&
+               o.total is number && o.total >= 0 &&
+               o.status in ['pending', 'processing', 'shipped', 'delivered', 'cancelled'] &&
+               o.createdAt is timestamp;
+      }
     }
 
+    // --- USERS ---
     match /users/{userId} {
-      allow read: if isOwner(userId) || isAdmin();
-      allow create: if isAuthenticated() && isOwner(userId) && isValidUser(request.resource.data) && 
-                    (request.resource.data.role == 'customer' || 
-                     (request.auth.token.email == "storesnilesh@gmail.com" && request.auth.token.email_verified == true && request.resource.data.role == 'admin'));
-      allow update: if isAdmin() || (isOwner(userId) && isValidUser(request.resource.data) && request.resource.data.role == resource.data.role);
+      allow get: if isOwner(userId) || isAdmin();
+      allow list: if isAdmin();
+      allow create: if isOwner(userId) && isValidUser(incoming()) && incoming().role == 'customer';
+      allow update: if (isOwner(userId) && incoming().role == existing().role && isValidUser(incoming())) || isAdmin();
+      
+      function isValidUser(u) {
+        return u.keys().hasAll(['email', 'role', 'createdAt']) &&
+               u.email is string && u.email == request.auth.token.email &&
+               u.role in ['customer', 'admin'] &&
+               u.createdAt is string;
+      }
     }
   }
 }

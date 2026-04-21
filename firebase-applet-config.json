@@ -1,9 +1,10 @@
 {
-  "projectId": "nileshstores-12757",
-  "appId": "1:169025441656:web:b264826a35d184b8cac28d",
-  "apiKey": "AIzaSyCY400vm3eqoXvmNK30wHEZH-UMsKsnzaI",
-  "authDomain": "nileshstores-12757.firebaseapp.com",
-  "storageBucket": "nileshstores-12757.firebasestorage.app",
-  "messagingSenderId": "169025441656",
-  "measurementId": "G-9NNRL7ZDHJ"
+  "projectId": "gen-lang-client-0925881828",
+  "appId": "1:469639958302:web:becd5c53f22887ef4c830f",
+  "apiKey": "AIzaSyA5mXvdcu9TyRlWMX05KE8uAVJwx3XRtmE",
+  "authDomain": "gen-lang-client-0925881828.firebaseapp.com",
+  "firestoreDatabaseId": "ai-studio-09042267-1083-4edd-9288-4efc65dfb6c3",
+  "storageBucket": "gen-lang-client-0925881828.firebasestorage.app",
+  "messagingSenderId": "469639958302",
+  "measurementId": ""
 }

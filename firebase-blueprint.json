@@ -1,87 +1,116 @@
 {
   "entities": {
-    "Category": {
-      "title": "Category",
-      "description": "Product categories for the store",
-      "type": "object",
-      "properties": {
-        "name": { "type": "string" },
-        "slug": { "type": "string" },
-        "image": { "type": "string" },
-        "parentId": { "type": "string" },
-        "sortOrder": { "type": "number" }
-      },
-      "required": ["name", "slug"]
-    },
     "Product": {
       "title": "Product",
-      "description": "Stationery products available for sale",
+      "description": "A stationery product available in the store",
       "type": "object",
       "properties": {
         "name": { "type": "string" },
-        "slug": { "type": "string" },
         "description": { "type": "string" },
         "price": { "type": "number" },
-        "mrp": { "type": "number" },
-        "gstRate": { "type": "number" },
-        "sku": { "type": "string" },
+        "image": { "type": "string" },
+        "category": { "type": "string" },
+        "slug": { "type": "string" },
+        "rating": { "type": "number" },
+        "reviews": { "type": "number" },
+        "isBestSeller": { "type": "boolean" },
         "stock": { "type": "number" },
-        "images": { "type": "array", "items": { "type": "string" } },
-        "categoryId": { "type": "string" },
-        "status": { "type": "string", "enum": ["active", "draft", "archived"] },
         "createdAt": { "type": "string", "format": "date-time" },
         "updatedAt": { "type": "string", "format": "date-time" }
       },
-      "required": ["name", "slug", "price", "categoryId", "status"]
+      "required": ["name", "price", "image", "slug"]
+    },
+    "Category": {
+      "title": "Category",
+      "description": "A category for grouping products",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "image": { "type": "string" },
+        "description": { "type": "string" }
+      },
+      "required": ["name", "image"]
+    },
+    "Banner": {
+      "title": "Banner",
+      "description": "A promotional banner for the homepage",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string" },
+        "subtitle": { "type": "string" },
+        "image": { "type": "string" },
+        "link": { "type": "string" },
+        "order": { "type": "number" }
+      },
+      "required": ["image", "order"]
     },
     "Order": {
       "title": "Order",
-      "description": "Customer orders",
+      "description": "A customer order",
       "type": "object",
       "properties": {
-        "orderNumber": { "type": "string" },
         "userId": { "type": "string" },
-        "status": { "type": "string", "enum": ["pending", "processing", "shipped", "delivered", "cancelled"] },
+        "items": { 
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": { "type": "string" },
+              "name": { "type": "string" },
+              "price": { "type": "number" },
+              "quantity": { "type": "number" },
+              "image": { "type": "string" }
+            }
+          }
+        },
         "total": { "type": "number" },
-        "gstAmount": { "type": "number" },
-        "shippingCharge": { "type": "number" },
-        "grandTotal": { "type": "number" },
-        "paymentStatus": { "type": "string", "enum": ["pending", "paid", "failed", "refunded"] },
-        "paymentMethod": { "type": "string", "enum": ["cod", "upi", "card"] },
-        "shippingAddress": { "type": "object" },
+        "status": { 
+          "type": "string",
+          "enum": ["pending", "processing", "shipped", "delivered", "cancelled"]
+        },
+        "customerName": { "type": "string" },
+        "customerEmail": { "type": "string" },
+        "address": { "type": "string" },
+        "phone": { "type": "string" },
         "createdAt": { "type": "string", "format": "date-time" }
       },
-      "required": ["orderNumber", "userId", "status", "grandTotal"]
+      "required": ["userId", "items", "total", "status", "createdAt"]
     },
-    "User": {
-      "title": "User",
-      "description": "Customer and Admin profiles",
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "Information about a registered user",
       "type": "object",
       "properties": {
         "name": { "type": "string" },
         "email": { "type": "string" },
-        "phone": { "type": "string" },
-        "role": { "type": "string", "enum": ["customer", "admin"] },
+        "role": { 
+          "type": "string",
+          "enum": ["customer", "admin"]
+        },
         "createdAt": { "type": "string", "format": "date-time" }
       },
-      "required": ["role"]
+      "required": ["email", "role", "createdAt"]
     }
   },
   "firestore": {
+    "/products/{productId}": {
+      "schema": "Product",
+      "description": "Collection of all products"
+    },
     "/categories/{categoryId}": {
       "schema": "Category",
       "description": "Collection of product categories"
     },
-    "/products/{productId}": {
-      "schema": "Product",
-      "description": "Collection of products"
+    "/banners/{bannerId}": {
+      "schema": "Banner",
+      "description": "Collection of homepage banners"
     },
     "/orders/{orderId}": {
       "schema": "Order",
       "description": "Collection of customer orders"
     },
     "/users/{userId}": {
-      "schema": "User",
+      "schema": "UserProfile",
       "description": "Collection of user profiles"
     }
   }
