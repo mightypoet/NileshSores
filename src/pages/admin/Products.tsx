@@ -120,11 +120,10 @@ const AdminProducts: React.FC = () => {
           images: [...(prev.images || []), url]
         }));
         toast.success('Image uploaded successfully');
-      } else {
-        throw new Error('Upload failed');
       }
+      // Errors are handled with specific toasts inside dataService.uploadImage
     } catch (error) {
-      toast.error('Failed to upload image');
+      console.error('UI Layer: Image upload failed', error);
     } finally {
       setUploadingImage(false);
     }

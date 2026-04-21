@@ -79,8 +79,9 @@ const AdminCategories: React.FC = () => {
         setFormData(prev => ({ ...prev, image: url }));
         toast.success('Image uploaded successfully');
       }
+      // Errors are handled with specific toasts inside dataService.uploadImage
     } catch (error) {
-      toast.error('Upload failed');
+      console.error('UI Layer: Category image upload failed', error);
     } finally {
       setUploadingImage(false);
     }

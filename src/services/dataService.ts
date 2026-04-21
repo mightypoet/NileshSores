@@ -173,12 +173,36 @@ export const dataService = {
   },
 
   async uploadImage(file: File, bucket: string): Promise<string | null> {
+    console.log(`Starting image upload to bucket: ${bucket}, file: ${file.name}`);
     try {
+      // Validate storage initialization
+      if (!storage) {
+        throw new Error("Firebase Storage is not initialized. Please check your firebase.ts configuration.");
+      }
+
       const storageRef = ref(storage, `${bucket}/${Date.now()}-${file.name}`);
+      console.log("Storage reference created, starting uploadBytes...");
+      
       const snapshot = await uploadBytes(storageRef, file);
-      return await getDownloadURL(snapshot.ref);
-    } catch (error) {
+      console.log("Upload successful, fetching download URL...");
+      
+      const url = await getDownloadURL(snapshot.ref);
+      console.log("Download URL obtained:", url);
+      return url;
+    } catch (error: any) {
       console.error("Error uploading image:", error);
+      
+      // Provide more specific error info if possible
+      let errorMessage = error.message || "Unknown error";
+      if (error.code === 'storage/unauthorized') {
+        errorMessage = "Permission denied. Please check your Firebase Storage security rules.";
+      } else if (error.code === 'storage/canceled') {
+        errorMessage = "Upload was canceled.";
+      } else if (error.code === 'storage/unknown') {
+        errorMessage = "An unknown error occurred. This might be due to a network issue or Storage service not being enabled.";
+      }
+      
+      toast.error(`Upload Error: ${errorMessage}`);
       return null;
     }
   },
