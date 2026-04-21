@@ -53,6 +53,8 @@ export default function Login() {
         message = 'The login attempt was interrupted.';
       } else if (error.code === 'auth/operation-not-allowed') {
         message = 'Google Sign-In is not enabled in the Firebase console. Please check your settings.';
+      } else if (error.code === 'auth/unauthorized-domain') {
+        message = 'This domain is not authorized in Firebase. Please add this URL to the "Authorized domains" list in your Firebase Console (Authentication > Settings).';
       } else if (error.message) {
         message = `Auth Error: ${error.message}`;
       }
