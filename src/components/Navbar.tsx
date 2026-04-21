@@ -64,18 +64,32 @@ const Navbar = () => {
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between">
           {/* Logo */}
-          <Link to="/" className="flex items-center gap-4 group">
-            <div className="h-10 md:h-16 w-auto flex items-center justify-center transition-all duration-300 group-hover:scale-110">
+          <Link to="/" className="flex items-center gap-3 group">
+            <div className="h-10 md:h-16 w-32 md:w-48 flex items-center justify-center transition-all duration-300 group-hover:scale-105 relative">
               <img 
-                src="https://zonyxuymmdtacejy.private.blob.vercel-storage.com/pomelli_photoshoot_image_1_1_0420.png" 
-                alt="Logo" 
-                className="h-full w-auto object-contain drop-shadow-sm"
-                referrerPolicy="no-referrer"
+                src="https://zej6lpqs5vbuobbb.public.blob.vercel-storage.com/pomelli_photoshoot_image_1_1_0420-removebg-preview.png" 
+                alt="Nilesh Stores Logo" 
+                className="h-full w-full object-contain relative z-10"
+                onLoad={(e) => {
+                  const target = e.target as HTMLImageElement;
+                  console.log("Logo Loaded successfully:", target.src);
+                }}
+                onError={(e) => {
+                  const target = e.target as HTMLImageElement;
+                  target.style.display = 'none';
+                  const parent = target.parentElement;
+                  if (parent && !parent.querySelector('.fallback-text')) {
+                    const fallback = document.createElement('div');
+                    fallback.className = 'fallback-text flex flex-col items-center justify-center';
+                    fallback.innerHTML = '<span class="text-indigo-600 font-black italic text-xl">NILESH</span><span class="text-[8px] font-bold uppercase tracking-widest text-zinc-400">STORES</span>';
+                    parent.appendChild(fallback);
+                  }
+                }}
               />
             </div>
-            <div className="flex flex-col border-l border-zinc-100 pl-4">
-              <span className="text-xl md:text-2xl font-black tracking-tighter text-zinc-900 leading-tight uppercase italic">NILESH <span className="text-indigo-600">STORES</span></span>
-              <span className="text-[8px] md:text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-400">Premium Stationery</span>
+            <div className="hidden sm:flex flex-col border-l border-zinc-100 pl-4 leading-none">
+              <span className="text-lg md:text-xl font-black tracking-tighter text-zinc-900 uppercase italic leading-none">NILESH <span className="text-indigo-600">STORES</span></span>
+              <span className="text-[7px] md:text-[9px] font-bold uppercase tracking-[0.2em] text-zinc-400 mt-1 leading-none">Premium Stationery</span>
             </div>
           </Link>
 
@@ -199,7 +213,7 @@ const Navbar = () => {
                 <Link to="/" onClick={() => setIsMenuOpen(false)} className="flex items-center gap-2">
                   <div className="h-10 w-auto flex items-center">
                     <img 
-                      src="https://zonyxuymmdtacejy.private.blob.vercel-storage.com/pomelli_photoshoot_image_1_1_0420.png" 
+                      src="https://zej6lpqs5vbuobbb.public.blob.vercel-storage.com/pomelli_photoshoot_image_1_1_0420-removebg-preview.png" 
                       alt="Logo" 
                       className="h-full w-auto object-contain"
                       referrerPolicy="no-referrer"

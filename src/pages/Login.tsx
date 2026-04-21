@@ -72,12 +72,22 @@ export default function Login() {
         className="w-full max-w-lg"
       >
         <div className="bg-white rounded-[3.5rem] p-12 shadow-2xl border border-zinc-100 flex flex-col items-center">
-          <div className="h-20 w-auto flex items-center justify-center mb-8">
+          <div className="h-20 w-48 flex items-center justify-center mb-8 relative">
             <img 
-              src="https://zonyxuymmdtacejy.private.blob.vercel-storage.com/pomelli_photoshoot_image_1_1_0420.png" 
+              src="https://zej6lpqs5vbuobbb.public.blob.vercel-storage.com/pomelli_photoshoot_image_1_1_0420-removebg-preview.png" 
               alt="Logo" 
-              className="h-full w-auto object-contain"
-              referrerPolicy="no-referrer"
+              className="h-full w-full object-contain relative z-10"
+              onError={(e) => {
+                const target = e.target as HTMLImageElement;
+                target.style.display = 'none';
+                const parent = target.parentElement;
+                if (parent && !parent.querySelector('.fallback-text')) {
+                  const fallback = document.createElement('div');
+                  fallback.className = 'fallback-text flex flex-col items-center justify-center';
+                  fallback.innerHTML = '<span class="text-indigo-600 font-black italic text-4xl">NILESH</span><span class="text-[10px] font-bold uppercase tracking-[0.4em] text-zinc-300 mt-1">STORES</span>';
+                  parent.appendChild(fallback);
+                }
+              }}
             />
           </div>
           

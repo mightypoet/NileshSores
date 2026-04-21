@@ -10,12 +10,22 @@ const Footer = () => {
         <div className="grid grid-cols-1 gap-16 md:grid-cols-4">
           <div className="space-y-8">
             <Link to="/" className="flex items-center gap-3 group">
-              <div className="h-10 w-auto flex items-center justify-center transition-transform group-hover:scale-105">
+              <div className="h-10 w-32 md:w-40 flex items-center justify-center transition-transform group-hover:scale-105 relative">
                 <img 
-                  src="https://zonyxuymmdtacejy.private.blob.vercel-storage.com/pomelli_photoshoot_image_1_1_0420.png" 
+                  src="https://zej6lpqs5vbuobbb.public.blob.vercel-storage.com/pomelli_photoshoot_image_1_1_0420-removebg-preview.png" 
                   alt="Logo" 
-                  className="h-full w-auto object-contain brightness-0 invert"
-                  referrerPolicy="no-referrer"
+                  className="h-full w-full object-contain brightness-0 invert relative z-10"
+                  onError={(e) => {
+                    const target = e.target as HTMLImageElement;
+                    target.style.display = 'none';
+                    const parent = target.parentElement;
+                    if (parent && !parent.querySelector('.fallback-text')) {
+                      const fallback = document.createElement('div');
+                      fallback.className = 'fallback-text flex flex-col items-start leading-none';
+                      fallback.innerHTML = '<span class="text-white font-black italic text-xl">NILESH</span><span class="text-[8px] font-bold uppercase tracking-widest text-zinc-500">STORES</span>';
+                      parent.appendChild(fallback);
+                    }
+                  }}
                 />
               </div>
               <div className="flex flex-col leading-none">
