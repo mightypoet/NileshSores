@@ -212,7 +212,12 @@ export const dataService = {
 
   // UPLOADS (Vercel Blob via Proxy)
   async uploadImage(file: File, _bucket: string): Promise<string | null> {
-    console.log(`Starting image upload to Vercel Blob, file: ${file.name}`);
+    console.log(`Starting image upload: ${file.name} (${(file.size / 1024).toFixed(1)} KB)`);
+    
+    // Add a controller to handle timeouts
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 60000); // 60s timeout
+
     try {
       const formData = new FormData();
       formData.append('file', file);
@@ -220,19 +225,57 @@ export const dataService = {
       const response = await fetch('/api/upload', {
         method: 'POST',
         body: formData,
+        signal: controller.signal
       });
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to upload image');
+      clearTimeout(timeoutId);
+
+      let responseText = '';
+      try {
+        responseText = await response.text();
+      } catch (e) {
+        console.error("Could not read response text:", e);
       }
 
-      const { url } = await response.json();
-      console.log("Vercel Blob upload successful:", url);
-      return url;
+      if (!response.ok) {
+        const contentType = response.headers.get("content-type");
+        let errorMessage = 'Failed to upload image';
+        
+        if (contentType && contentType.includes("application/json")) {
+          try {
+            const errorData = JSON.parse(responseText);
+            errorMessage = errorData.error || errorMessage;
+          } catch (e) {
+            errorMessage = `Status ${response.status}: ${responseText.substring(0, 100)}`;
+          }
+        } else {
+          errorMessage = responseText || `Status ${response.status}`;
+        }
+        
+        throw new Error(errorMessage);
+      }
+
+      try {
+        const { url } = JSON.parse(responseText);
+        
+        if (!url) {
+          throw new Error("Server responded successfully but returned no image URL");
+        }
+        
+        console.log("Image upload successful, URL:", url);
+        return url;
+      } catch (error: any) {
+        throw new Error(`Invalid JSON response from server: ${responseText.substring(0, 100)}`);
+      }
     } catch (error: any) {
-      console.error("Error uploading image to Vercel Blob:", error);
-      toast.error(`Upload Error: ${error.message || 'Unknown error'}`);
+      clearTimeout(timeoutId);
+      if (error.name === 'AbortError') {
+        console.error("Upload Error: Request timed out after 60 seconds");
+        toast.error("Upload timed out. The file might be too large or the connection is slow.");
+      } else {
+        console.error("Error uploading image to Vercel Blob:", error);
+        toast.error(`Upload Error: ${error.message || 'Unknown error'}`);
+      }
       return null;
     }
   },
