@@ -31,6 +31,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       
       if (firebaseUser) {
         try {
+          if (!supabase) {
+            setProfile(null);
+            setLoading(false);
+            return;
+          }
           const { data, error } = await supabase
             .from('profiles')
             .select('*')

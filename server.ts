@@ -1,3 +1,4 @@
+import "dotenv/config";
 import express from "express";
 import { createServer as createViteServer } from "vite";
 import path from "path";
@@ -50,9 +51,11 @@ async function startServer() {
     const vite = await createViteServer({
       server: { 
         middlewareMode: true,
-        host: "0.0.0.0",
-        port: 3000,
-        hmr: false // HMR is disabled in AI Studio
+        watch: {
+          usePolling: true,
+          interval: 100
+        },
+        hmr: false
       },
       appType: "spa",
     });

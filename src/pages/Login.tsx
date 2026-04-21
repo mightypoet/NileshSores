@@ -28,6 +28,12 @@ export default function Login() {
       const user = result.user;
       console.log("Logged in user:", user.email);
 
+      if (!supabase) {
+        toast.error('Supabase is not configured. Profile sync failed.');
+        navigate(from, { replace: true });
+        return;
+      }
+
       // Create profile in Supabase if it doesn't exist
       const { data: profileSnap, error: profileError } = await supabase
         .from('profiles')

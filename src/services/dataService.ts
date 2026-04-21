@@ -6,6 +6,7 @@ import { toast } from 'sonner';
 export const dataService = {
   // PRODUCTS
   async getProducts(): Promise<Product[]> {
+    if (!supabase) return mockProducts;
     try {
       const { data, error } = await supabase
         .from('products')
@@ -22,6 +23,7 @@ export const dataService = {
   },
 
   async createProduct(product: Partial<Product>): Promise<Product | null> {
+    if (!supabase) return null;
     try {
       const { data, error } = await supabase
         .from('products')
@@ -38,6 +40,7 @@ export const dataService = {
   },
 
   async updateProduct(id: string, updates: Partial<Product>): Promise<Product | null> {
+    if (!supabase) return null;
     try {
       const { data, error } = await supabase
         .from('products')
@@ -55,6 +58,7 @@ export const dataService = {
   },
 
   async deleteProduct(id: string): Promise<boolean> {
+    if (!supabase) return false;
     try {
       const { error } = await supabase
         .from('products')
@@ -71,6 +75,7 @@ export const dataService = {
 
   // CATEGORIES
   async getCategories(): Promise<Category[]> {
+    if (!supabase) return mockCategories;
     try {
       const { data, error } = await supabase
         .from('categories')
@@ -87,6 +92,7 @@ export const dataService = {
   },
 
   async createCategory(category: Partial<Category>): Promise<Category | null> {
+    if (!supabase) return null;
     try {
       const { data, error } = await supabase
         .from('categories')
@@ -103,6 +109,7 @@ export const dataService = {
   },
 
   async updateCategory(id: string, updates: Partial<Category>): Promise<Category | null> {
+    if (!supabase) return null;
     try {
       const { data, error } = await supabase
         .from('categories')
@@ -120,6 +127,7 @@ export const dataService = {
   },
 
   async deleteCategory(id: string): Promise<boolean> {
+    if (!supabase) return false;
     try {
       const { error } = await supabase
         .from('categories')
@@ -136,6 +144,7 @@ export const dataService = {
 
   // BANNERS
   async getBanners(): Promise<Banner[]> {
+    if (!supabase) return [];
     try {
       const { data, error } = await supabase
         .from('banners')
@@ -151,6 +160,7 @@ export const dataService = {
   },
 
   async createBanner(banner: Partial<Banner>): Promise<Banner | null> {
+    if (!supabase) return null;
     try {
       const { data, error } = await supabase
         .from('banners')
@@ -167,6 +177,7 @@ export const dataService = {
   },
 
   async updateBanner(id: string, updates: Partial<Banner>): Promise<Banner | null> {
+    if (!supabase) return null;
     try {
       const { data, error } = await supabase
         .from('banners')
@@ -184,6 +195,7 @@ export const dataService = {
   },
 
   async deleteBanner(id: string): Promise<boolean> {
+    if (!supabase) return false;
     try {
       const { error } = await supabase
         .from('banners')
@@ -226,6 +238,10 @@ export const dataService = {
   },
 
   async getProductBySlug(slug: string): Promise<Product | null> {
+    if (!supabase) {
+      const mockProduct = mockProducts.find(p => p.slug === slug);
+      return mockProduct || null;
+    }
     try {
       const { data, error } = await supabase
         .from('products')
@@ -244,6 +260,7 @@ export const dataService = {
 
   // Order Management
   async getOrders(): Promise<Order[]> {
+    if (!supabase) return [];
     try {
       const { data, error } = await supabase
         .from('orders')
@@ -259,6 +276,7 @@ export const dataService = {
   },
 
   async updateOrderStatus(id: string, status: Order['status']): Promise<boolean> {
+    if (!supabase) return false;
     try {
       const { error } = await supabase
         .from('orders')
@@ -275,6 +293,7 @@ export const dataService = {
 
   // User Management
   async getUsers(): Promise<UserProfile[]> {
+    if (!supabase) return [];
     try {
       const { data, error } = await supabase
         .from('profiles')
@@ -290,6 +309,7 @@ export const dataService = {
   },
 
   async updateUserRole(id: string, role: 'customer' | 'admin'): Promise<boolean> {
+    if (!supabase) return false;
     try {
       const { error } = await supabase
         .from('profiles')
