@@ -23,7 +23,7 @@ async function startServer() {
   });
 
   // Vercel Blob Upload Route
-  app.post("/api/upload", upload.single("file"), async (req, res) => {
+  app.post("/api/upload", upload.single("file"), async (req: any, res) => {
     try {
       if (!req.file) {
         return res.status(400).json({ error: "No file uploaded" });

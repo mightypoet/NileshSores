@@ -1,7 +1,7 @@
 import React, { useState, useEffect, createContext, useContext } from 'react';
-import { auth, db } from '../lib/firebase';
+import { auth } from '../lib/firebase';
+import { supabase } from '../lib/supabase';
 import { onAuthStateChanged, signOut as firebaseSignOut, User } from 'firebase/auth';
-import { doc, getDoc } from 'firebase/firestore';
 import { UserProfile } from '../types';
 
 interface AuthContextType {
@@ -31,17 +31,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       
       if (firebaseUser) {
         try {
-          const docRef = doc(db, 'users', firebaseUser.uid);
-          const docSnap = await getDoc(docRef);
+          const { data, error } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('id', firebaseUser.uid)
+            .maybeSingle();
           
-          if (docSnap.exists()) {
-            setProfile({ id: docSnap.id, ...docSnap.data() } as UserProfile);
+          if (error) throw error;
+
+          if (data) {
+            setProfile(data as UserProfile);
           } else {
-            // Default profile for new users
             setProfile(null);
           }
         } catch (error) {
-          console.error("Error fetching user profile:", error);
+          console.error("Error fetching user profile from Supabase:", error);
+          setProfile(null);
         }
       } else {
         setProfile(null);

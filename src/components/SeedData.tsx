@@ -1,5 +1,4 @@
-import { db } from '../lib/firebase';
-import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { supabase } from '../lib/supabase';
 import { Button } from '@/components/ui/button';
 import { useState } from 'react';
 import { toast } from 'sonner';
@@ -78,17 +77,21 @@ export default function SeedData() {
   const handleSeed = async () => {
     setLoading(true);
     try {
-      for (const product of sampleProducts) {
-        await addDoc(collection(db, 'products'), {
-          ...product,
-          createdAt: serverTimestamp(),
-          updatedAt: serverTimestamp()
-        });
-      }
-      toast.success("Sample data seeded successfully!");
+      const productsWithTimestamps = sampleProducts.map(p => ({
+        ...p,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      }));
+
+      const { error } = await supabase
+        .from('products')
+        .insert(productsWithTimestamps);
+
+      if (error) throw error;
+      toast.success("Sample data seeded to Supabase successfully!");
     } catch (error) {
       console.error("Seed error:", error);
-      toast.error("Failed to seed data.");
+      toast.error("Failed to seed data to Supabase.");
     } finally {
       setLoading(false);
     }

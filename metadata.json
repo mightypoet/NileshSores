@@ -1,6 +1,6 @@
 {
   "name": "Nilesh Store - Premium Stationery",
-  "description": "Nilesh Store is a premium stationery e-commerce platform integrated with Firebase for dynamic product management, featuring advanced filtering, real-time cart, and secure user authentication.",
+  "description": "Nilesh Store - A premium stationery e-commerce platform powered by Supabase for dynamic data management, Vercel Blob for secure image storage, and Firebase for authentication.",
   "requestFramePermissions": [],
   "majorCapabilities": []
 }

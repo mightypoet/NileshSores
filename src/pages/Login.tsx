@@ -1,11 +1,11 @@
 import { useState } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
-import { auth, db } from '../lib/firebase';
+import { auth } from '../lib/firebase';
+import { supabase } from '../lib/supabase';
 import { 
   signInWithPopup, 
   GoogleAuthProvider 
 } from 'firebase/auth';
-import { doc, setDoc, getDoc } from 'firebase/firestore';
 import { motion } from 'motion/react';
 import { Button } from '@/components/ui/button';
 import { ShieldCheck, PenTool, Sparkles, AlertCircle } from 'lucide-react';
@@ -28,17 +28,27 @@ export default function Login() {
       const user = result.user;
       console.log("Logged in user:", user.email);
 
-      // Create profile if it doesn't exist
-      const profileRef = doc(db, 'users', user.uid);
-      const profileSnap = await getDoc(profileRef);
+      // Create profile in Supabase if it doesn't exist
+      const { data: profileSnap, error: profileError } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', user.uid)
+        .maybeSingle();
 
-      if (!profileSnap.exists()) {
-        await setDoc(profileRef, {
-          name: user.displayName,
-          email: user.email,
-          role: user.email === 'storesnilesh@gmail.com' ? 'admin' : 'customer',
-          createdAt: new Date().toISOString()
-        });
+      if (profileError) throw profileError;
+
+      if (!profileSnap) {
+        const { error: insertError } = await supabase
+          .from('profiles')
+          .insert({
+            id: user.uid,
+            name: user.displayName,
+            email: user.email,
+            role: user.email === 'storesnilesh@gmail.com' ? 'admin' : 'customer',
+            createdAt: new Date().toISOString()
+          });
+        
+        if (insertError) throw insertError;
       }
 
       toast.success('Welcome back to Nilesh Store!');

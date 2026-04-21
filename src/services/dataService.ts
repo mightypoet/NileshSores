@@ -150,6 +150,54 @@ export const dataService = {
     }
   },
 
+  async createBanner(banner: Partial<Banner>): Promise<Banner | null> {
+    try {
+      const { data, error } = await supabase
+        .from('banners')
+        .insert([banner])
+        .select()
+        .single();
+      
+      if (error) throw error;
+      return data as Banner;
+    } catch (error) {
+      console.error("Error creating banner in Supabase:", error);
+      return null;
+    }
+  },
+
+  async updateBanner(id: string, updates: Partial<Banner>): Promise<Banner | null> {
+    try {
+      const { data, error } = await supabase
+        .from('banners')
+        .update(updates)
+        .eq('id', id)
+        .select()
+        .single();
+      
+      if (error) throw error;
+      return data as Banner;
+    } catch (error) {
+      console.error("Error updating banner in Supabase:", error);
+      return null;
+    }
+  },
+
+  async deleteBanner(id: string): Promise<boolean> {
+    try {
+      const { error } = await supabase
+        .from('banners')
+        .delete()
+        .eq('id', id);
+      
+      if (error) throw error;
+      return true;
+    } catch (error) {
+      console.error("Error deleting banner from Supabase:", error);
+      return false;
+    }
+  },
+
   // UPLOADS (Vercel Blob via Proxy)
   async uploadImage(file: File, _bucket: string): Promise<string | null> {
     console.log(`Starting image upload to Vercel Blob, file: ${file.name}`);
