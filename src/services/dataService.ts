@@ -8,17 +8,67 @@ export const dataService = {
   async getProducts(): Promise<Product[]> {
     if (!supabase) return mockProducts;
     try {
+      // Use join to get category name
       const { data, error } = await supabase
         .from('products')
-        .select('*')
+        .select(`
+          *,
+          categories (
+            name,
+            slug
+          )
+        `)
         .order('id', { ascending: false });
       
       if (error) throw error;
-      if (data && data.length > 0) return data as Product[];
+      
+      // Map categories data to a simple category object if exists
+      const productsWithCategory = data?.map((p: any) => ({
+        ...p,
+        categoryName: p.categories?.name
+      }));
+
+      if (productsWithCategory && productsWithCategory.length > 0) return productsWithCategory as Product[];
       return mockProducts;
     } catch (error) {
       console.error("Error fetching products from Supabase:", error);
       return mockProducts;
+    }
+  },
+
+  async getProductBySlug(slug: string): Promise<Product | null> {
+    if (!supabase) {
+      const mockProduct = mockProducts.find(p => p.slug === slug);
+      return mockProduct || null;
+    }
+    try {
+      const { data, error } = await supabase
+        .from('products')
+        .select(`
+          *,
+          categories (
+            name,
+            slug
+          )
+        `)
+        .eq('slug', slug)
+        .single();
+      
+      if (error) {
+        console.error("Supabase Error [getProductBySlug]:", error);
+        throw error;
+      }
+      
+      const productWithCategory = {
+        ...data,
+        categoryName: (data as any).categories?.name
+      };
+
+      return productWithCategory as Product;
+    } catch (error) {
+      console.error("Error fetching product by slug from Supabase:", error);
+      const mockProduct = mockProducts.find(p => p.slug === slug);
+      return mockProduct || null;
     }
   },
 
@@ -309,27 +359,6 @@ export const dataService = {
         toast.error(`Upload Error: ${error.message || 'Unknown error'}`);
       }
       return null;
-    }
-  },
-
-  async getProductBySlug(slug: string): Promise<Product | null> {
-    if (!supabase) {
-      const mockProduct = mockProducts.find(p => p.slug === slug);
-      return mockProduct || null;
-    }
-    try {
-      const { data, error } = await supabase
-        .from('products')
-        .select('*')
-        .eq('slug', slug)
-        .single();
-      
-      if (error) throw error;
-      return data as Product;
-    } catch (error) {
-      console.error("Error fetching product by slug from Supabase:", error);
-      const mockProduct = mockProducts.find(p => p.slug === slug);
-      return mockProduct || null;
     }
   },
 

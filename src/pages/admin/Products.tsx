@@ -98,7 +98,7 @@ const AdminProducts: React.FC = () => {
       stock: 0,
       sku: `PROD-${Math.random().toString(36).substring(2, 7).toUpperCase()}`,
       gstRate: 18,
-      categoryId: categories[0]?.id || '',
+      categoryId: categories.length > 0 ? categories[0].id : '',
       status: 'active',
       images: [],
       isBestSeller: false,
@@ -111,6 +111,12 @@ const AdminProducts: React.FC = () => {
     const file = e.target.files?.[0];
     if (!file) return;
 
+    // Basic file validation
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('File size too large. Please upload an image under 5MB.');
+      return;
+    }
+
     setUploadingImage(true);
     try {
       const url = await dataService.uploadImage(file, 'product-images');
@@ -121,39 +127,70 @@ const AdminProducts: React.FC = () => {
         }));
         toast.success('Image uploaded successfully');
       }
-      // Errors are handled with specific toasts inside dataService.uploadImage
     } catch (error) {
       console.error('UI Layer: Image upload failed', error);
     } finally {
       setUploadingImage(false);
+      // Reset the input so the same file can be uploaded again if needed
+      e.target.value = '';
     }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Validation
+    if (!formData.name || !formData.categoryId) {
+      toast.error('Please fill in all required fields');
+      return;
+    }
+
+    if (formData.price && formData.mrp && formData.price > formData.mrp) {
+      toast.error('Price cannot be greater than MRP');
+      return;
+    }
+
     setLoading(true);
 
     try {
+      // Calculate discount
+      const price = formData.price || 0;
+      const mrp = formData.mrp || 0;
+      const discount = mrp > 0 ? Math.round(((mrp - price) / mrp) * 100) : 0;
+      
+      const finalData = {
+        ...formData,
+        discount
+      };
+
       let result;
       if (editingProduct) {
-        result = await dataService.updateProduct(editingProduct.id, formData);
+        result = await dataService.updateProduct(editingProduct.id, finalData);
         if (result) {
           setProducts(products.map(p => p.id === result!.id ? result! : p));
           toast.success('Product updated successfully');
         }
       } else {
         // Generate slug if not provided
-        if (!formData.slug) {
-          formData.slug = formData.name?.toLowerCase().replace(/ /g, '-').replace(/[^\w-]+/g, '') || '';
+        if (!finalData.slug) {
+          finalData.slug = finalData.name?.toLowerCase()
+            .trim()
+            .replace(/ /g, '-')
+            .replace(/[^\w-]+/g, '') || '';
         }
-        result = await dataService.createProduct(formData);
+        
+        result = await dataService.createProduct(finalData);
         if (result) {
           setProducts([result, ...products]);
           toast.success('Product created successfully');
         }
       }
-      setIsModalOpen(false);
+      
+      if (result) {
+        setIsModalOpen(false);
+      }
     } catch (error) {
+      console.error('Failed to save product:', error);
       toast.error('Failed to save product');
     } finally {
       setLoading(false);
