@@ -10,9 +10,5 @@
       "destination": "/index.html"
     }
   ],
-  "functions": {
-    "server.ts": {
-      "runtime": "vercel-node@latest"
-    }
-  }
+  "trailingSlash": false
 }
