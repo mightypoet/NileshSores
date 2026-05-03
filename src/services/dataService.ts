@@ -33,10 +33,14 @@ export const dataService = {
         .select()
         .single();
       
-      if (error) throw error;
+      if (error) {
+        console.error("Supabase Error [createProduct]:", error.message, error.details, error.hint);
+        throw error;
+      }
       return data as Product;
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error creating product in Supabase:", error);
+      toast.error(`Create Error: ${error.message || 'Unknown error'}`);
       return null;
     }
   },
@@ -53,10 +57,14 @@ export const dataService = {
         .select()
         .single();
       
-      if (error) throw error;
+      if (error) {
+        console.error("Supabase Error [updateProduct]:", error.message, error.details, error.hint);
+        throw error;
+      }
       return data as Product;
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error updating product in Supabase:", error);
+      toast.error(`Update Error: ${error.message || 'Unknown error'}`);
       return null;
     }
   },
@@ -69,10 +77,14 @@ export const dataService = {
         .delete()
         .eq('id', id);
       
-      if (error) throw error;
+      if (error) {
+        console.error("Supabase Error [deleteProduct]:", error.message, error.details, error.hint);
+        throw error;
+      }
       return true;
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error deleting product from Supabase:", error);
+      toast.error(`Delete Error: ${error.message || 'Unknown error'}`);
       return false;
     }
   },
@@ -106,10 +118,14 @@ export const dataService = {
         .select()
         .single();
       
-      if (error) throw error;
+      if (error) {
+        console.error("Supabase Error [createCategory]:", error.message, error.details, error.hint);
+        throw error;
+      }
       return data as Category;
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error creating category in Supabase:", error);
+      toast.error(`Create Error: ${error.message || 'Unknown error'}`);
       return null;
     }
   },
@@ -126,10 +142,14 @@ export const dataService = {
         .select()
         .single();
       
-      if (error) throw error;
+      if (error) {
+        console.error("Supabase Error [updateCategory]:", error.message, error.details, error.hint);
+        throw error;
+      }
       return data as Category;
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error updating category in Supabase:", error);
+      toast.error(`Update Error: ${error.message || 'Unknown error'}`);
       return null;
     }
   },
