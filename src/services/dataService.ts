@@ -25,9 +25,11 @@ export const dataService = {
   async createProduct(product: Partial<Product>): Promise<Product | null> {
     if (!supabase) return null;
     try {
+      // Remove id if it exists to let Supabase generate it
+      const { id, ...payload } = product as any;
       const { data, error } = await supabase
         .from('products')
-        .insert([product])
+        .insert([payload])
         .select()
         .single();
       
@@ -42,9 +44,11 @@ export const dataService = {
   async updateProduct(id: string, updates: Partial<Product>): Promise<Product | null> {
     if (!supabase) return null;
     try {
+      // Remove id from updates to prevent primary key modification error
+      const { id: _, ...payload } = updates as any;
       const { data, error } = await supabase
         .from('products')
-        .update(updates)
+        .update(payload)
         .eq('id', id)
         .select()
         .single();
@@ -94,9 +98,11 @@ export const dataService = {
   async createCategory(category: Partial<Category>): Promise<Category | null> {
     if (!supabase) return null;
     try {
+      // Remove id if it exists to let Supabase generate it
+      const { id, ...payload } = category as any;
       const { data, error } = await supabase
         .from('categories')
-        .insert([category])
+        .insert([payload])
         .select()
         .single();
       
@@ -111,9 +117,11 @@ export const dataService = {
   async updateCategory(id: string, updates: Partial<Category>): Promise<Category | null> {
     if (!supabase) return null;
     try {
+      // Remove id from updates to prevent primary key modification error
+      const { id: _, ...payload } = updates as any;
       const { data, error } = await supabase
         .from('categories')
-        .update(updates)
+        .update(payload)
         .eq('id', id)
         .select()
         .single();

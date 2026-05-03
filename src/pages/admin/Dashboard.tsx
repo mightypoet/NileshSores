@@ -11,6 +11,7 @@ import {
 import { dataService } from '../../services/dataService';
 import { Product, Category } from '../../types';
 import { motion } from 'motion/react';
+import SeedData from '../../components/SeedData';
 
 const AdminDashboard: React.FC = () => {
   const [products, setProducts] = useState<Product[]>([]);
@@ -66,9 +67,12 @@ const AdminDashboard: React.FC = () => {
 
   return (
     <div className="space-y-8">
-      <header>
-        <h1 className="text-3xl font-bold text-zinc-900 tracking-tight">Dashboard Overview</h1>
-        <p className="text-zinc-500 mt-1.5">Welcome back, Admin. Here's what's happening with your store today.</p>
+      <header className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold text-zinc-900 tracking-tight">Dashboard Overview</h1>
+          <p className="text-zinc-500 mt-1.5">Welcome back, Admin. Here's what's happening with your store today.</p>
+        </div>
+        <SeedData />
       </header>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">

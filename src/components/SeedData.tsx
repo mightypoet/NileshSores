@@ -3,6 +3,13 @@ import { Button } from '@/components/ui/button';
 import { useState } from 'react';
 import { toast } from 'sonner';
 
+const sampleCategories = [
+  { id: 'pens', name: 'Pens & Writing', slug: 'pens', image: 'https://picsum.photos/seed/pens/400/400' },
+  { id: 'notebooks', name: 'Notebooks & paper', slug: 'notebooks', image: 'https://picsum.photos/seed/notebooks/400/400' },
+  { id: 'art', name: 'Art Supplies', slug: 'art', image: 'https://picsum.photos/seed/art/400/400' },
+  { id: 'office', name: 'Office Stationery', slug: 'office', image: 'https://picsum.photos/seed/office/400/400' },
+];
+
 const sampleProducts = [
   {
     name: "Parker Vector Gold Fountain Pen",
@@ -15,7 +22,9 @@ const sampleProducts = [
     stock: 50,
     images: ["https://picsum.photos/seed/parker/800/800"],
     categoryId: "pens",
-    status: "active"
+    status: "active",
+    isBestSeller: true,
+    collection: "Premium Collection"
   },
   {
     name: "Classmate Pulse Spiral Notebook",
@@ -28,7 +37,9 @@ const sampleProducts = [
     stock: 100,
     images: ["https://picsum.photos/seed/notebook1/800/800"],
     categoryId: "notebooks",
-    status: "active"
+    status: "active",
+    isBestSeller: false,
+    collection: "Regular Stationery"
   },
   {
     name: "Faber-Castell 24 Color Pencils",
@@ -41,7 +52,9 @@ const sampleProducts = [
     stock: 30,
     images: ["https://picsum.photos/seed/colors/800/800"],
     categoryId: "art",
-    status: "active"
+    status: "active",
+    isBestSeller: true,
+    collection: "Art Supplies"
   },
   {
     name: "Casio MJ-120D Plus Calculator",
@@ -54,7 +67,9 @@ const sampleProducts = [
     stock: 20,
     images: ["https://picsum.photos/seed/calculator/800/800"],
     categoryId: "office",
-    status: "active"
+    status: "active",
+    isBestSeller: false,
+    collection: "Office Essentials"
   },
   {
     name: "Staedtler Mars Lumograph Pencils (Set of 6)",
@@ -67,7 +82,9 @@ const sampleProducts = [
     stock: 15,
     images: ["https://picsum.photos/seed/pencils/800/800"],
     categoryId: "art",
-    status: "active"
+    status: "active",
+    isBestSeller: true,
+    collection: "Professional Art"
   }
 ];
 
@@ -77,21 +94,30 @@ export default function SeedData() {
   const handleSeed = async () => {
     setLoading(true);
     try {
+      // 1. Seed Categories first
+      const { error: catError } = await supabase
+        .from('categories')
+        .upsert(sampleCategories, { onConflict: 'id' });
+
+      if (catError) throw catError;
+
+      // 2. Seed Products
       const productsWithTimestamps = sampleProducts.map(p => ({
         ...p,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString()
       }));
 
-      const { error } = await supabase
+      const { error: prodError } = await supabase
         .from('products')
         .insert(productsWithTimestamps);
 
-      if (error) throw error;
-      toast.success("Sample data seeded to Supabase successfully!");
+      if (prodError) throw prodError;
+      
+      toast.success("Categories and Products seeded successfully!");
     } catch (error) {
       console.error("Seed error:", error);
-      toast.error("Failed to seed data to Supabase.");
+      toast.error("Failed to seed data. Make sure tables exist in Supabase.");
     } finally {
       setLoading(false);
     }

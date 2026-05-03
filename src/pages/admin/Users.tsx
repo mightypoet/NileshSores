@@ -157,7 +157,11 @@ const AdminUsers: React.FC = () => {
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-1.5 text-zinc-500 text-xs">
                       <Calendar className="w-3 h-3" />
-                      {new Date(user.createdAt?.seconds * 1000 || user.createdAt || Date.now()).toLocaleDateString()}
+                      {user.createdAt ? (
+                        typeof user.createdAt === 'string'
+                          ? new Date(user.createdAt).toLocaleDateString()
+                          : new Date(user.createdAt?.seconds * 1000 || user.createdAt).toLocaleDateString()
+                      ) : new Date().toLocaleDateString()}
                     </div>
                   </td>
                   <td className="px-6 py-4 text-right">

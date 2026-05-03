@@ -149,7 +149,13 @@ const AdminOrders: React.FC = () => {
                   <td className="px-6 py-4">
                     <div className="flex flex-col">
                       <span className="font-bold text-zinc-900 tracking-tight">#{order.orderNumber}</span>
-                      <span className="text-[10px] text-zinc-400 font-medium">{new Date(order.createdAt?.seconds * 1000 || Date.now()).toLocaleDateString()}</span>
+                      <span className="text-[10px] text-zinc-400 font-medium">
+                        {order.createdAt ? (
+                          typeof order.createdAt === 'string' 
+                            ? new Date(order.createdAt).toLocaleDateString()
+                            : new Date(order.createdAt?.seconds * 1000 || order.createdAt).toLocaleDateString()
+                        ) : new Date().toLocaleDateString()}
+                      </span>
                     </div>
                   </td>
                   <td className="px-6 py-4">
