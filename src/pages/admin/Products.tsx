@@ -138,20 +138,24 @@ const AdminProducts: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    console.log('[ADMIN PRODUCTS] Submitting form...', formData);
     
     // Validation
-    if (!formData.name || !formData.categoryId) {
-      toast.error('Please fill in all required fields');
+    if (!formData.name) {
+      toast.error('Product name is required');
+      return;
+    }
+    if (!formData.categoryId) {
+      toast.error('Please select a category');
       return;
     }
 
-    if (formData.price && formData.mrp && formData.price > formData.mrp) {
+    if (formData.price !== undefined && formData.mrp !== undefined && formData.price > formData.mrp) {
       toast.error('Price cannot be greater than MRP');
       return;
     }
 
     setLoading(true);
-
     try {
       // Calculate discount
       const price = formData.price || 0;
@@ -162,6 +166,8 @@ const AdminProducts: React.FC = () => {
         ...formData,
         discount
       };
+
+      console.log('[ADMIN PRODUCTS] Final data for save:', finalData);
 
       let result;
       if (editingProduct) {
@@ -189,9 +195,9 @@ const AdminProducts: React.FC = () => {
       if (result) {
         setIsModalOpen(false);
       }
-    } catch (error) {
-      console.error('Failed to save product:', error);
-      toast.error('Failed to save product');
+    } catch (error: any) {
+      console.error('[ADMIN PRODUCTS] FATAL SUBMIT ERROR:', error);
+      toast.error(`Error: ${error.message || 'Failed to save product'}`);
     } finally {
       setLoading(false);
     }
@@ -509,6 +515,7 @@ const AdminProducts: React.FC = () => {
                       value={formData.categoryId}
                       onChange={(e) => setFormData({...formData, categoryId: e.target.value})}
                     >
+                      <option value="">Select Category</option>
                       {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                     </select>
                   </div>
@@ -577,7 +584,7 @@ const AdminProducts: React.FC = () => {
                   Cancel
                 </Button>
                 <Button 
-                  onClick={handleSubmit}
+                  type="submit"
                   className="bg-indigo-600 hover:bg-indigo-700 text-white min-w-[120px]"
                   disabled={loading || uploadingImage}
                 >

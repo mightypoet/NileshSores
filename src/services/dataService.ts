@@ -405,12 +405,10 @@ export const dataService = {
 
   // UPLOADS (Vercel Blob via Proxy)
   async uploadImage(file: File, _bucket: string): Promise<string | null> {
-    // Determine the absolute URL if possible to avoid issues with relative paths in different contexts
-    const uploadUrl = window.location.origin.includes('localhost') || window.location.origin.includes('run.app')
-      ? '/api/upload'
-      : `${window.location.origin}/api/upload`;
+    // Relative path is most reliable in this environment to ensure it hits the current origin's proxy
+    const uploadUrl = '/api/upload';
     
-    console.log(`[DATA SERVICE] Starting image upload: ${file.name} to ${uploadUrl}`);
+    console.log(`[DATA SERVICE] Starting image upload: ${file.name} to ${uploadUrl} (Current Origin: ${window.location.origin})`);
     
     // Add a controller to handle timeouts
     const controller = new AbortController();
@@ -432,7 +430,7 @@ export const dataService = {
       clearTimeout(timeoutId);
 
       if (!response.ok) {
-        console.error(`[DATA SERVICE] Upload failed with text: ${responseText.substring(0, 500)}`);
+        console.error(`[DATA SERVICE] Upload failed with status ${response.status}. Response body:`, responseText);
         let errorMessage = `Upload failed (${response.status})`;
         try {
           const errorData = JSON.parse(responseText);
