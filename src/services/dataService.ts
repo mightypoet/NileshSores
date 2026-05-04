@@ -3,12 +3,79 @@ import { Product, Category, Banner, Order, UserProfile } from '../types';
 import { products as mockProducts, categories as mockCategories } from '../data/mockData';
 import { toast } from 'sonner';
 
+// Helper to map DB snake_case to UI camelCase
+const mapProductFromDb = (p: any): Product => ({
+  ...p,
+  reviewsCount: p.reviews_count,
+  gstRate: p.gst_rate,
+  categoryId: p.category_id,
+  isBestSeller: p.is_best_seller,
+  createdAt: p.created_at,
+  updatedAt: p.updated_at,
+  categoryName: p.categories?.name
+});
+
+// Helper to map UI camelCase to DB snake_case
+const mapProductToDb = (p: any): any => {
+  const { 
+    reviewsCount, 
+    gstRate, 
+    categoryId, 
+    isBestSeller, 
+    createdAt, 
+    updatedAt, 
+    categoryName,
+    ...rest 
+  } = p;
+  
+  const mapped: any = { ...rest };
+  if (reviewsCount !== undefined) mapped.reviews_count = reviewsCount;
+  if (gstRate !== undefined) mapped.gst_rate = gstRate;
+  if (categoryId !== undefined) mapped.category_id = categoryId;
+  if (isBestSeller !== undefined) mapped.is_best_seller = isBestSeller;
+  if (createdAt !== undefined) mapped.created_at = createdAt;
+  if (updatedAt !== undefined) mapped.updated_at = updatedAt;
+  
+  return mapped;
+};
+
+const mapCategoryFromDb = (c: any): Category => ({
+  ...c,
+  parentId: c.parent_id,
+  sortOrder: c.sort_order
+});
+
+const mapCategoryToDb = (c: any): any => {
+  const { parentId, sortOrder, ...rest } = c;
+  const mapped: any = { ...rest };
+  if (parentId !== undefined) mapped.parent_id = parentId;
+  if (sortOrder !== undefined) mapped.sort_order = sortOrder;
+  return mapped;
+};
+
+const mapOrderFromDb = (o: any): Order => ({
+  ...o,
+  orderNumber: o.order_number,
+  userId: o.user_id,
+  gstAmount: o.gst_amount,
+  shippingCharge: o.shipping_charge,
+  grandTotal: o.grand_total,
+  paymentStatus: o.payment_status,
+  paymentMethod: o.payment_method,
+  shippingAddress: o.shipping_address,
+  createdAt: o.created_at
+});
+
+const mapUserFromDb = (u: any): UserProfile => ({
+  ...u,
+  createdAt: u.created_at
+});
+
 export const dataService = {
   // PRODUCTS
   async getProducts(): Promise<Product[]> {
     if (!supabase) return mockProducts;
     try {
-      // Use join to get category name
       const { data, error } = await supabase
         .from('products')
         .select(`
@@ -22,13 +89,7 @@ export const dataService = {
       
       if (error) throw error;
       
-      // Map categories data to a simple category object if exists
-      const productsWithCategory = data?.map((p: any) => ({
-        ...p,
-        categoryName: p.categories?.name
-      }));
-
-      if (productsWithCategory && productsWithCategory.length > 0) return productsWithCategory as Product[];
+      if (data && data.length > 0) return data.map(mapProductFromDb);
       return mockProducts;
     } catch (error) {
       console.error("Error fetching products from Supabase:", error);
@@ -59,12 +120,7 @@ export const dataService = {
         throw error;
       }
       
-      const productWithCategory = {
-        ...data,
-        categoryName: (data as any).categories?.name
-      };
-
-      return productWithCategory as Product;
+      return mapProductFromDb(data);
     } catch (error) {
       console.error("Error fetching product by slug from Supabase:", error);
       const mockProduct = mockProducts.find(p => p.slug === slug);
@@ -75,8 +131,9 @@ export const dataService = {
   async createProduct(product: Partial<Product>): Promise<Product | null> {
     if (!supabase) return null;
     try {
-      // Remove id if it exists to let Supabase generate it
-      const { id, ...payload } = product as any;
+      const { id, ...rest } = product as any;
+      const payload = mapProductToDb(rest);
+      
       const { data, error } = await supabase
         .from('products')
         .insert([payload])
@@ -87,7 +144,7 @@ export const dataService = {
         console.error("Supabase Error [createProduct]:", error.message, error.details, error.hint);
         throw error;
       }
-      return data as Product;
+      return mapProductFromDb(data);
     } catch (error: any) {
       console.error("Error creating product in Supabase:", error);
       toast.error(`Create Error: ${error.message || 'Unknown error'}`);
@@ -98,8 +155,11 @@ export const dataService = {
   async updateProduct(id: string, updates: Partial<Product>): Promise<Product | null> {
     if (!supabase) return null;
     try {
-      // Remove id from updates to prevent primary key modification error
-      const { id: _, ...payload } = updates as any;
+      const { id: _, ...rest } = updates as any;
+      const payload = mapProductToDb(rest);
+      // Ensure we don't try to update created_at
+      delete payload.created_at;
+      
       const { data, error } = await supabase
         .from('products')
         .update(payload)
@@ -111,7 +171,7 @@ export const dataService = {
         console.error("Supabase Error [updateProduct]:", error.message, error.details, error.hint);
         throw error;
       }
-      return data as Product;
+      return mapProductFromDb(data);
     } catch (error: any) {
       console.error("Error updating product in Supabase:", error);
       toast.error(`Update Error: ${error.message || 'Unknown error'}`);
@@ -149,7 +209,7 @@ export const dataService = {
         .order('name');
       
       if (error) throw error;
-      if (data && data.length > 0) return data as Category[];
+      if (data && data.length > 0) return data.map(mapCategoryFromDb);
       return mockCategories;
     } catch (error) {
       console.error("Error fetching categories from Supabase:", error);
@@ -160,8 +220,9 @@ export const dataService = {
   async createCategory(category: Partial<Category>): Promise<Category | null> {
     if (!supabase) return null;
     try {
-      // Remove id if it exists to let Supabase generate it
-      const { id, ...payload } = category as any;
+      const { id, ...rest } = category as any;
+      const payload = mapCategoryToDb(rest);
+      
       const { data, error } = await supabase
         .from('categories')
         .insert([payload])
@@ -172,7 +233,7 @@ export const dataService = {
         console.error("Supabase Error [createCategory]:", error.message, error.details, error.hint);
         throw error;
       }
-      return data as Category;
+      return mapCategoryFromDb(data);
     } catch (error: any) {
       console.error("Error creating category in Supabase:", error);
       toast.error(`Create Error: ${error.message || 'Unknown error'}`);
@@ -183,8 +244,9 @@ export const dataService = {
   async updateCategory(id: string, updates: Partial<Category>): Promise<Category | null> {
     if (!supabase) return null;
     try {
-      // Remove id from updates to prevent primary key modification error
-      const { id: _, ...payload } = updates as any;
+      const { id: _, ...rest } = updates as any;
+      const payload = mapCategoryToDb(rest);
+      
       const { data, error } = await supabase
         .from('categories')
         .update(payload)
@@ -196,7 +258,7 @@ export const dataService = {
         console.error("Supabase Error [updateCategory]:", error.message, error.details, error.hint);
         throw error;
       }
-      return data as Category;
+      return mapCategoryFromDb(data);
     } catch (error: any) {
       console.error("Error updating category in Supabase:", error);
       toast.error(`Update Error: ${error.message || 'Unknown error'}`);
@@ -372,7 +434,7 @@ export const dataService = {
         .order('id', { ascending: false });
       
       if (error) throw error;
-      return data as Order[];
+      return data.map(mapOrderFromDb);
     } catch (error) {
       console.error("Error fetching orders from Supabase:", error);
       return [];
@@ -405,7 +467,7 @@ export const dataService = {
         .order('id', { ascending: false });
       
       if (error) throw error;
-      return data as UserProfile[];
+      return data.map(mapUserFromDb);
     } catch (error) {
       console.error("Error fetching users from Supabase:", error);
       return [];
