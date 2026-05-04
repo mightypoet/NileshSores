@@ -2,18 +2,24 @@
 -- Run this in the Supabase SQL Editor
 
 -- !!! FIX FOR UUID ERROR (Mismatched ID types) !!!
--- If you see "invalid input syntax for type uuid" in the console, 
--- COPY AND RUN ALL THESE LINES in your Supabase SQL Editor:
--- 
+-- Use these if you see "invalid input syntax for type uuid" in the console.
+-- Run them one by one. If a line fails because a column name is different, skip it.
+
+-- Primary ID conversions
 -- ALTER TABLE profiles ALTER COLUMN id TYPE TEXT;
--- ALTER TABLE categories ALTER COLUMN id TYPE TEXT;
--- ALTER TABLE categories ALTER COLUMN parent_id TYPE TEXT;
 -- ALTER TABLE products ALTER COLUMN id TYPE TEXT;
--- ALTER TABLE products ALTER COLUMN category_id TYPE TEXT;
+-- ALTER TABLE categories ALTER COLUMN id TYPE TEXT;
 -- ALTER TABLE orders ALTER COLUMN id TYPE TEXT;
--- ALTER TABLE orders ALTER COLUMN user_id TYPE TEXT;
 -- ALTER TABLE banners ALTER COLUMN id TYPE TEXT;
--- !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+-- Foreign Key conversions (Check if your columns are camelCase or snake_case)
+-- If category_id fails, try "categoryId" WITH DOUBLE QUOTES:
+-- ALTER TABLE products ALTER COLUMN "categoryId" TYPE TEXT;
+-- ALTER TABLE products ALTER COLUMN category_id TYPE TEXT;
+
+-- If user_id fails, try "userId" WITH DOUBLE QUOTES:
+-- ALTER TABLE orders ALTER COLUMN "userId" TYPE TEXT;
+-- ALTER TABLE orders ALTER COLUMN user_id TYPE TEXT;
 
 -- 1. Create Categories Table
 CREATE TABLE IF NOT EXISTS categories (

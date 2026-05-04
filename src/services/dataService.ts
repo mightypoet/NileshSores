@@ -352,10 +352,10 @@ export const dataService = {
 
   // UPLOADS (Vercel Blob via Proxy)
   async uploadImage(file: File, _bucket: string): Promise<string | null> {
-    const uploadUrl = '/api/v1/storage/upload';
-    const fullUrl = `${window.location.origin}${uploadUrl}`;
+    const uploadUrl = '/api/upload';
+    
     console.log(`[DATA SERVICE] Starting image upload: ${file.name}`);
-    console.log(`[DATA SERVICE] Target URL: ${fullUrl}`);
+    console.log(`[DATA SERVICE] Target Path: ${uploadUrl}`);
     
     // Add a controller to handle timeouts
     const controller = new AbortController();
@@ -365,26 +365,27 @@ export const dataService = {
       const formData = new FormData();
       formData.append('file', file);
 
+      // Use relative URL for maximum compatibility
       const response = await fetch(uploadUrl, {
         method: 'POST',
         body: formData,
-        signal: controller.signal,
+        signal: controller.signal
       });
 
-      console.log(`[DATA SERVICE] Response Status: ${response.status}`);
+      console.log(`[DATA SERVICE] Response: ${response.status} ${response.statusText}`);
       
       const responseText = await response.text();
       clearTimeout(timeoutId);
 
       if (!response.ok) {
-        console.error(`[DATA SERVICE] Upload failed: ${responseText}`);
+        console.error(`[DATA SERVICE] Upload failed with text: ${responseText.substring(0, 500)}`);
         let errorMessage = `Upload failed (${response.status})`;
         try {
           const errorData = JSON.parse(responseText);
           errorMessage = errorData.error || errorMessage;
         } catch (e) {
           if (responseText.includes('<!DOCTYPE html>')) {
-            errorMessage = "Server returned HTML instead of JSON. This often means a 404 or 405 was intercepted by the frontend router.";
+            errorMessage = "Server returned HTML instead of JSON. Ensure the server is running and the route exists.";
           } else {
             errorMessage = responseText.substring(0, 100);
           }
@@ -399,7 +400,7 @@ export const dataService = {
       return data.url;
     } catch (error: any) {
       clearTimeout(timeoutId);
-      console.error("[DATA SERVICE] Exception:", error);
+      console.error("[DATA SERVICE] Exception during upload:", error);
       toast.error(`Upload Error: ${error.message}`);
       return null;
     }

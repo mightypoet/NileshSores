@@ -73,6 +73,7 @@ async function startServer() {
     };
 
     // Use multiple variants for maximum compatibility
+    app.post("/api/storage/v2/upload", upload.single("file"), handleUpload);
     app.post("/api/storage/v1/upload", upload.single("file"), handleUpload);
     app.post("/api/v1/storage/upload", upload.single("file"), handleUpload);
     app.post("/api/upload", upload.single("file"), handleUpload);
