@@ -407,8 +407,8 @@ export const dataService = {
 
   // UPLOADS (Vercel Blob via Proxy)
   async uploadImage(file: File, _bucket: string): Promise<string | null> {
-    // Relative path ensures we hit the SAME server that is serving the frontend
-    const uploadUrl = '/api/upload';
+    // Using a more specific path to avoid platform conflicts
+    const uploadUrl = '/api/service/storage/upload';
     
     console.log(`[DATA SERVICE] Starting image upload: ${file.name} to ${uploadUrl} (Current Origin: ${window.location.origin})`);
     

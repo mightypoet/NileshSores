@@ -2,8 +2,12 @@
   "version": 2,
   "rewrites": [
     {
+      "source": "/api/service/storage/upload",
+      "destination": "/server.ts"
+    },
+    {
       "source": "/api/(.*)",
-      "destination": "server.ts"
+      "destination": "/server.ts"
     },
     {
       "source": "/(.*)",

@@ -63,26 +63,38 @@ app.use((req, res, next) => {
 app.use(cors());
 app.options("*", cors());
 
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
 // 3. API Routes
 app.all("/api/health", (req, res) => {
   res.json({ 
     status: "ok", 
     time: new Date().toISOString(),
     supabaseInitialized: !!supabaseAdmin,
-    bucketReady: 'checking'
+    env: {
+      hasUrl: !!supabaseUrl,
+      hasKey: !!supabaseServiceKey,
+      nodeEnv: process.env.NODE_ENV
+    }
   });
 });
 
 const handleUpload = async (req: any, res: any) => {
-  console.log(`>>> [SERVER] Incoming upload request: ${req.file ? req.file.originalname : 'No file'}`);
+  const requestId = Math.random().toString(36).substring(7);
+  console.log(`[${requestId}] >>> [SERVER] Incoming upload request: ${req.file ? req.file.originalname : 'No file'}`);
+  
   try {
     if (!supabaseAdmin) {
-      console.error(">>> [SERVER] Upload failed: Supabase Admin client not initialized. Check your SUPABASE_SERVICE_ROLE_KEY secret.");
-      return res.status(500).json({ error: "Server configuration error: Supabase Service Role Key missing in environment variables." });
+      console.error(`[${requestId}] >>> [SERVER] Upload failed: Supabase Admin client not initialized.`);
+      return res.status(500).json({ 
+        error: "Server configuration error: Supabase Service Role Key missing.",
+        tip: "Please ensure SUPABASE_SERVICE_ROLE_KEY is set in your environment variables."
+      });
     }
 
     if (!req.file) {
-      console.error(">>> [SERVER] Upload failed: No file found in request");
+      console.error(`[${requestId}] >>> [SERVER] Upload failed: No file found in request`);
       return res.status(400).json({ error: "No file uploaded. Make sure the field name is 'file'." });
     }
     
@@ -91,7 +103,7 @@ const handleUpload = async (req: any, res: any) => {
     const filePath = `${timestamp}-${safeName}`;
     const bucketName = 'product-images';
     
-    console.log(`>>> [SERVER] Uploading to Supabase bucket '${bucketName}': ${filePath} (${req.file.mimetype})`);
+    console.log(`[${requestId}] >>> [SERVER] Uploading to Supabase bucket '${bucketName}': ${filePath} (${req.file.mimetype})`);
     
     // Upload to Supabase Storage
     const { data: uploadData, error: uploadError } = await supabaseAdmin.storage
@@ -102,8 +114,8 @@ const handleUpload = async (req: any, res: any) => {
       });
     
     if (uploadError) {
-      console.error(">>> [SERVER] Supabase Storage Upload Error:", uploadError);
-      return res.status(500).json({ error: `Storage Error: ${uploadError.message}. Make sure the bucket 'product-images' exists and is public.` });
+      console.error(`[${requestId}] >>> [SERVER] Supabase Storage Upload Error:`, uploadError);
+      return res.status(500).json({ error: `Storage Error: ${uploadError.message}. Ensure the bucket 'product-images' exists and is public.` });
     }
 
     // Get Public URL
@@ -111,20 +123,30 @@ const handleUpload = async (req: any, res: any) => {
       .from(bucketName)
       .getPublicUrl(filePath);
     
-    console.log(`>>> [SERVER] SUCCESS: ${publicUrl}`);
+    console.log(`[${requestId}] >>> [SERVER] SUCCESS: ${publicUrl}`);
     return res.status(200).json({ url: publicUrl });
   } catch (error: any) {
-    console.error(">>> [SERVER] FATAL UPLOAD ERROR:", error);
+    console.error(`[${requestId}] >>> [SERVER] FATAL UPLOAD ERROR:`, error);
     return res.status(500).json({ error: `Server Upload Error: ${error.message}` });
   }
 };
 
-// Routes registered synchronously
+// Diagnostic for 405: Log all methods hitting the upload endpoint
+app.all("/api/service/storage/upload", (req, res, next) => {
+  console.log(`>>> [SERVER] /api/service/storage/upload hit with method: ${req.method} from ${req.headers.origin}`);
+  if (req.method === 'POST') {
+    return next();
+  }
+  res.status(405).json({ 
+    error: "Method Not Allowed. Please use POST.",
+    receivedMethod: req.method
+  });
+});
+
+// Main upload routes
+app.post("/api/service/storage/upload", upload.single("file"), handleUpload);
 app.post("/api/upload", upload.single("file"), handleUpload);
 app.post("/upload", upload.single("file"), handleUpload);
-
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
 
 async function setupVite() {
   if (process.env.NODE_ENV !== "production") {
