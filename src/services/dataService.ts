@@ -353,7 +353,9 @@ export const dataService = {
   // UPLOADS (Vercel Blob via Proxy)
   async uploadImage(file: File, _bucket: string): Promise<string | null> {
     const uploadUrl = '/api/v1/storage/upload';
-    console.log(`[DATA SERVICE] Starting image upload: ${file.name} to ${uploadUrl}`);
+    const fullUrl = `${window.location.origin}${uploadUrl}`;
+    console.log(`[DATA SERVICE] Starting image upload: ${file.name}`);
+    console.log(`[DATA SERVICE] Target URL: ${fullUrl}`);
     
     // Add a controller to handle timeouts
     const controller = new AbortController();
@@ -363,15 +365,13 @@ export const dataService = {
       const formData = new FormData();
       formData.append('file', file);
 
-      console.log(`[DATA SERVICE] Fetching: ${uploadUrl}`);
       const response = await fetch(uploadUrl, {
         method: 'POST',
         body: formData,
         signal: controller.signal,
-        // Ensure we don't send any manual content-type, let the browser set boundary
       });
 
-      console.log(`[DATA SERVICE] Status: ${response.status} ${response.statusText}`);
+      console.log(`[DATA SERVICE] Response Status: ${response.status}`);
       
       const responseText = await response.text();
       clearTimeout(timeoutId);

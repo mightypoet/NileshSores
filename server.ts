@@ -35,48 +35,48 @@ async function startServer() {
     app.options("*", cors());
 
     // 3. API Routes
-    app.get("/healthz", (req, res) => {
-      res.json({ status: "alive" });
+    app.all("/api/health", (req, res) => {
+      res.json({ status: "ok", time: new Date().toISOString() });
     });
 
     const handleUpload = async (req: any, res: any) => {
       console.log(`>>> [SERVER] Incoming upload request: ${req.file ? req.file.originalname : 'No file'}`);
       try {
+        if (!process.env.BLOB_READ_WRITE_TOKEN) {
+          console.error(">>> [SERVER] Upload failed: BLOB_READ_WRITE_TOKEN is missing");
+          return res.status(500).json({ error: "Server configuration error: Upload token missing." });
+        }
+
         if (!req.file) {
           console.error(">>> [SERVER] Upload failed: No file found in request");
           return res.status(400).json({ error: "No file uploaded. Make sure the field name is 'file'." });
         }
         
-        const token = process.env.BLOB_READ_WRITE_TOKEN;
-        if (!token) {
-          console.error(">>> [SERVER] Upload failed: BLOB_READ_WRITE_TOKEN is missing");
-          return res.status(500).json({ error: "Server configuration error: Upload token missing." });
-        }
-
-        const filename = `uploads/${Date.now()}-${req.file.originalname.replace(/[^a-zA-Z0-9.]/g, '-')}`;
-        console.log(`>>> [SERVER] Attempting upload to Vercel Blob: ${filename}`);
+        const timestamp = Date.now();
+        const safeName = req.file.originalname.replace(/[^a-zA-Z0-9.]/g, '-');
+        const filename = `uploads/${timestamp}-${safeName}`;
+        
+        console.log(`>>> [SERVER] Uploading: ${filename} (${req.file.mimetype})`);
         
         const blob = await put(filename, req.file.buffer, { 
           access: "public", 
-          token: token,
+          token: process.env.BLOB_READ_WRITE_TOKEN,
           contentType: req.file.mimetype
         });
         
-        console.log(`>>> [SERVER] Upload successful: ${blob.url}`);
-        res.json({ url: blob.url });
+        console.log(`>>> [SERVER] SUCCESS: ${blob.url}`);
+        return res.status(200).json({ url: blob.url });
       } catch (error: any) {
-        console.error(">>> [SERVER] Upload error:", error);
-        res.status(500).json({ error: `Upload process failed: ${error.message}` });
+        console.error(">>> [SERVER] FATAL UPLOAD ERROR:", error);
+        return res.status(500).json({ error: `Server Upload Error: ${error.message}` });
       }
     };
 
-    // Use a very specific route to avoid any Vite conflicts
+    // Use multiple variants for maximum compatibility
+    app.post("/api/storage/v1/upload", upload.single("file"), handleUpload);
     app.post("/api/v1/storage/upload", upload.single("file"), handleUpload);
-    
-    // Legacy routes for compatibility
-    app.post("/api/file-upload", upload.single("file"), handleUpload);
-    app.post("/upload", upload.single("file"), handleUpload);
     app.post("/api/upload", upload.single("file"), handleUpload);
+    app.post("/upload", upload.single("file"), handleUpload);
 
     app.use(express.json());
     app.use(express.urlencoded({ extended: true }));

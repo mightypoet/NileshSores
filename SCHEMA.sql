@@ -1,6 +1,20 @@
 -- SQL schema for Nilesh Store Supabase configuration
 -- Run this in the Supabase SQL Editor
 
+-- !!! FIX FOR UUID ERROR (Mismatched ID types) !!!
+-- If you see "invalid input syntax for type uuid" in the console, 
+-- COPY AND RUN ALL THESE LINES in your Supabase SQL Editor:
+-- 
+-- ALTER TABLE profiles ALTER COLUMN id TYPE TEXT;
+-- ALTER TABLE categories ALTER COLUMN id TYPE TEXT;
+-- ALTER TABLE categories ALTER COLUMN parent_id TYPE TEXT;
+-- ALTER TABLE products ALTER COLUMN id TYPE TEXT;
+-- ALTER TABLE products ALTER COLUMN category_id TYPE TEXT;
+-- ALTER TABLE orders ALTER COLUMN id TYPE TEXT;
+-- ALTER TABLE orders ALTER COLUMN user_id TYPE TEXT;
+-- ALTER TABLE banners ALTER COLUMN id TYPE TEXT;
+-- !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
 -- 1. Create Categories Table
 CREATE TABLE IF NOT EXISTS categories (
   id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
