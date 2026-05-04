@@ -4,11 +4,28 @@ import { createServer as createViteServer } from "vite";
 import path from "path";
 import { fileURLToPath } from "url";
 import multer from "multer";
-import { put } from "@vercel/blob";
+import { createClient } from "@supabase/supabase-js";
 import cors from "cors";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+
+// Initialize Supabase Admin Client
+const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+if (!supabaseUrl || !supabaseServiceKey) {
+  console.warn(">>> [SERVER] Warning: SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY is missing. Uploads will fail.");
+}
+
+const supabaseAdmin = (supabaseUrl && supabaseServiceKey) 
+  ? createClient(supabaseUrl, supabaseServiceKey, {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false
+      }
+    })
+  : null;
 
 // Configure multer for memory storage
 const storage = multer.memoryStorage();
@@ -39,9 +56,9 @@ app.all("/api/health", (req, res) => {
 const handleUpload = async (req: any, res: any) => {
   console.log(`>>> [SERVER] Incoming upload request: ${req.file ? req.file.originalname : 'No file'}`);
   try {
-    if (!process.env.BLOB_READ_WRITE_TOKEN) {
-      console.error(">>> [SERVER] Upload failed: BLOB_READ_WRITE_TOKEN is missing");
-      return res.status(500).json({ error: "Server configuration error: Upload token missing." });
+    if (!supabaseAdmin) {
+      console.error(">>> [SERVER] Upload failed: Supabase Admin client not initialized");
+      return res.status(500).json({ error: "Server configuration error: Supabase Service Role Key missing." });
     }
 
     if (!req.file) {
@@ -51,18 +68,31 @@ const handleUpload = async (req: any, res: any) => {
     
     const timestamp = Date.now();
     const safeName = req.file.originalname.replace(/[^a-zA-Z0-9.]/g, '-');
-    const filename = `uploads/${timestamp}-${safeName}`;
+    const filePath = `${timestamp}-${safeName}`;
+    const bucketName = 'product-images';
     
-    console.log(`>>> [SERVER] Uploading: ${filename} (${req.file.mimetype})`);
+    console.log(`>>> [SERVER] Uploading to Supabase bucket '${bucketName}': ${filePath} (${req.file.mimetype})`);
     
-    const blob = await put(filename, req.file.buffer, { 
-      access: "public", 
-      token: process.env.BLOB_READ_WRITE_TOKEN,
-      contentType: req.file.mimetype
-    });
+    // Upload to Supabase Storage
+    const { data: uploadData, error: uploadError } = await supabaseAdmin.storage
+      .from(bucketName)
+      .upload(filePath, req.file.buffer, {
+        contentType: req.file.mimetype,
+        upsert: true
+      });
     
-    console.log(`>>> [SERVER] SUCCESS: ${blob.url}`);
-    return res.status(200).json({ url: blob.url });
+    if (uploadError) {
+      console.error(">>> [SERVER] Supabase Storage Upload Error:", uploadError);
+      return res.status(500).json({ error: `Storage Error: ${uploadError.message}` });
+    }
+
+    // Get Public URL
+    const { data: { publicUrl } } = supabaseAdmin.storage
+      .from(bucketName)
+      .getPublicUrl(filePath);
+    
+    console.log(`>>> [SERVER] SUCCESS: ${publicUrl}`);
+    return res.status(200).json({ url: publicUrl });
   } catch (error: any) {
     console.error(">>> [SERVER] FATAL UPLOAD ERROR:", error);
     return res.status(500).json({ error: `Server Upload Error: ${error.message}` });
@@ -84,8 +114,7 @@ async function setupVite() {
       appType: "spa",
       define: {
         'import.meta.env.VITE_SUPABASE_URL': JSON.stringify(process.env.VITE_SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL),
-        'import.meta.env.VITE_SUPABASE_ANON_KEY': JSON.stringify(process.env.VITE_SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_PUBLISHABLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY),
-        'import.meta.env.BLOB_READ_WRITE_TOKEN': JSON.stringify(process.env.BLOB_READ_WRITE_TOKEN)
+        'import.meta.env.VITE_SUPABASE_ANON_KEY': JSON.stringify(process.env.VITE_SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_PUBLISHABLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY)
       }
     });
     console.log(">>> [SERVER] Vite initialized successfully.");
