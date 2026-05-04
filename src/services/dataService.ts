@@ -182,7 +182,13 @@ export const dataService = {
     if (!supabase) return null;
     try {
       const { id, categories, categoryName, ...rest } = product as any;
-      const payload = mapProductToDb(rest);
+      
+      // Fallback ID generation to prevent null constraint errors
+      const newId = id || crypto.randomUUID();
+      const payload = { 
+        ...mapProductToDb(rest),
+        id: newId
+      };
       
       console.log("[DATA SERVICE] Creating product with payload:", payload);
       
@@ -276,7 +282,15 @@ export const dataService = {
     if (!supabase) return null;
     try {
       const { id, ...rest } = category as any;
-      const payload = mapCategoryToDb(rest);
+      
+      // Fallback ID generation to prevent null constraint errors
+      const newId = id || crypto.randomUUID();
+      const payload = {
+        ...mapCategoryToDb(rest),
+        id: newId
+      };
+      
+      console.log("[DATA SERVICE] Creating category with payload:", payload);
       
       const { data, error } = await supabase
         .from('categories')

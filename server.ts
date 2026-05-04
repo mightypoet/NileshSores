@@ -133,12 +133,17 @@ const handleUpload = async (req: any, res: any) => {
 
 // Diagnostic for 405: Log all methods hitting the upload endpoint
 app.all("/api/service/storage/upload", (req, res, next) => {
-  console.log(`>>> [SERVER] /api/service/storage/upload hit with method: ${req.method} from ${req.headers.origin}`);
+  if (req.method === 'OPTIONS') return next(); // Let CORS handle preflight
+  
+  const timestamp = new Date().toISOString();
+  console.log(`[${timestamp}] >>> [SERVER] /api/service/storage/upload hit with method: ${req.method} from ${req.headers.origin || 'unknown origin'}`);
+  
   if (req.method === 'POST') {
     return next();
   }
+  
   res.status(405).json({ 
-    error: "Method Not Allowed. Please use POST.",
+    error: "Method Not Allowed. Please use POST for file uploads.",
     receivedMethod: req.method
   });
 });
