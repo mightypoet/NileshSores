@@ -6,12 +6,12 @@ import { toast } from 'sonner';
 // Helper to map DB snake_case to UI camelCase
 const mapProductFromDb = (p: any): Product => ({
   ...p,
-  reviewsCount: p.reviews_count,
-  gstRate: p.gst_rate,
-  categoryId: p.category_id,
-  isBestSeller: p.is_best_seller,
-  createdAt: p.created_at,
-  updatedAt: p.updated_at,
+  reviewsCount: p.reviews_count !== undefined ? p.reviews_count : p.reviewsCount,
+  gstRate: p.gst_rate !== undefined ? p.gst_rate : p.gstRate,
+  categoryId: p.category_id !== undefined ? p.category_id : p.categoryId,
+  isBestSeller: p.is_best_seller !== undefined ? p.is_best_seller : p.isBestSeller,
+  createdAt: p.created_at || p.createdAt,
+  updatedAt: p.updated_at || p.updatedAt,
   categoryName: p.categories?.name
 });
 
@@ -29,46 +29,47 @@ const mapProductToDb = (p: any): any => {
   } = p;
   
   const mapped: any = { ...rest };
-  if (reviewsCount !== undefined) mapped.reviews_count = reviewsCount;
-  if (gstRate !== undefined) mapped.gst_rate = gstRate;
-  if (categoryId !== undefined) mapped.category_id = categoryId;
-  if (isBestSeller !== undefined) mapped.is_best_seller = isBestSeller;
-  if (createdAt !== undefined) mapped.created_at = createdAt;
-  if (updatedAt !== undefined) mapped.updated_at = updatedAt;
+  // Using camelCase as primary for mapped keys if they were created that way in DB
+  if (reviewsCount !== undefined) { mapped.reviews_count = reviewsCount; mapped.reviewsCount = reviewsCount; }
+  if (gstRate !== undefined) { mapped.gst_rate = gstRate; mapped.gstRate = gstRate; }
+  if (categoryId !== undefined) { mapped.category_id = categoryId; mapped.categoryId = categoryId; }
+  if (isBestSeller !== undefined) { mapped.is_best_seller = isBestSeller; mapped.isBestSeller = isBestSeller; }
+  if (createdAt !== undefined) { mapped.created_at = createdAt; mapped.createdAt = createdAt; }
+  if (updatedAt !== undefined) { mapped.updated_at = updatedAt; mapped.updatedAt = updatedAt; }
   
   return mapped;
 };
 
 const mapCategoryFromDb = (c: any): Category => ({
   ...c,
-  parentId: c.parent_id,
-  sortOrder: c.sort_order
+  parentId: c.parent_id !== undefined ? c.parent_id : c.parentId,
+  sortOrder: c.sort_order !== undefined ? c.sort_order : c.sortOrder
 });
 
 const mapCategoryToDb = (c: any): any => {
   const { parentId, sortOrder, ...rest } = c;
   const mapped: any = { ...rest };
-  if (parentId !== undefined) mapped.parent_id = parentId;
-  if (sortOrder !== undefined) mapped.sort_order = sortOrder;
+  if (parentId !== undefined) { mapped.parent_id = parentId; mapped.parentId = parentId; }
+  if (sortOrder !== undefined) { mapped.sort_order = sortOrder; mapped.sortOrder = sortOrder; }
   return mapped;
 };
 
 const mapOrderFromDb = (o: any): Order => ({
   ...o,
-  orderNumber: o.order_number,
-  userId: o.user_id,
-  gstAmount: o.gst_amount,
-  shippingCharge: o.shipping_charge,
-  grandTotal: o.grand_total,
-  paymentStatus: o.payment_status,
-  paymentMethod: o.payment_method,
-  shippingAddress: o.shipping_address,
-  createdAt: o.created_at
+  orderNumber: o.order_number || o.orderNumber,
+  userId: o.user_id || o.userId,
+  gstAmount: o.gst_amount || o.gstAmount,
+  shippingCharge: o.shipping_charge || o.shippingCharge,
+  grandTotal: o.grand_total || o.grandTotal,
+  paymentStatus: o.payment_status || o.paymentStatus,
+  paymentMethod: o.payment_method || o.paymentMethod,
+  shippingAddress: o.shipping_address || o.shippingAddress,
+  createdAt: o.created_at || o.createdAt
 });
 
 const mapUserFromDb = (u: any): UserProfile => ({
   ...u,
-  createdAt: u.created_at
+  createdAt: u.created_at || u.createdAt
 });
 
 const mapOrderToDb = (o: any): any => {
@@ -86,15 +87,16 @@ const mapOrderToDb = (o: any): any => {
   } = o;
   
   const mapped: any = { ...rest };
-  if (orderNumber !== undefined) mapped.order_number = orderNumber;
-  if (userId !== undefined) mapped.user_id = userId;
-  if (gstAmount !== undefined) mapped.gst_amount = gstAmount;
-  if (shippingCharge !== undefined) mapped.shipping_charge = shippingCharge;
-  if (grandTotal !== undefined) mapped.grand_total = grandTotal;
-  if (paymentStatus !== undefined) mapped.payment_status = paymentStatus;
-  if (paymentMethod !== undefined) mapped.payment_method = paymentMethod;
-  if (shippingAddress !== undefined) mapped.shipping_address = shippingAddress;
-  if (createdAt !== undefined) mapped.created_at = createdAt;
+  // Use both variants to be compatible with whatever schema the user actually has
+  if (orderNumber !== undefined) { mapped.order_number = orderNumber; mapped.orderNumber = orderNumber; }
+  if (userId !== undefined) { mapped.user_id = userId; mapped.userId = userId; }
+  if (gstAmount !== undefined) { mapped.gst_amount = gstAmount; mapped.gstAmount = gstAmount; }
+  if (shippingCharge !== undefined) { mapped.shipping_charge = shippingCharge; mapped.shippingCharge = shippingCharge; }
+  if (grandTotal !== undefined) { mapped.grand_total = grandTotal; mapped.grandTotal = grandTotal; }
+  if (paymentStatus !== undefined) { mapped.payment_status = paymentStatus; mapped.paymentStatus = paymentStatus; }
+  if (paymentMethod !== undefined) { mapped.payment_method = paymentMethod; mapped.paymentMethod = paymentMethod; }
+  if (shippingAddress !== undefined) { mapped.shipping_address = shippingAddress; mapped.shippingAddress = shippingAddress; }
+  if (createdAt !== undefined) { mapped.created_at = createdAt; mapped.createdAt = createdAt; }
   
   return mapped;
 };
@@ -405,7 +407,7 @@ export const dataService = {
 
   // UPLOADS (Vercel Blob via Proxy)
   async uploadImage(file: File, _bucket: string): Promise<string | null> {
-    // Relative path is most reliable in this environment to ensure it hits the current origin's proxy
+    // Relative path ensures we hit the SAME server that is serving the frontend
     const uploadUrl = '/api/upload';
     
     console.log(`[DATA SERVICE] Starting image upload: ${file.name} to ${uploadUrl} (Current Origin: ${window.location.origin})`);
@@ -417,6 +419,9 @@ export const dataService = {
     try {
       const formData = new FormData();
       formData.append('file', file);
+
+      // Log what we're sending
+      console.log(`[DATA SERVICE] Payload: FormData with file: ${file.name}, size: ${file.size} bytes`);
 
       const response = await fetch(uploadUrl, {
         method: 'POST',
@@ -445,8 +450,18 @@ export const dataService = {
         throw new Error(errorMessage);
       }
 
-      const data = JSON.parse(responseText);
-      if (!data.url) throw new Error("No URL returned from server");
+      let data;
+      try {
+        data = JSON.parse(responseText);
+      } catch (e) {
+        console.error("[DATA SERVICE] Failed to parse upload response JSON:", responseText);
+        throw new Error("Invalid response format from upload server");
+      }
+
+      if (!data.url) {
+        console.error("[DATA SERVICE] Upload response missing url field:", data);
+        throw new Error("No URL returned from server");
+      }
       
       console.log("[DATA SERVICE] Upload success:", data.url);
       return data.url;

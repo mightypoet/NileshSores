@@ -36,11 +36,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             setLoading(false);
             return;
           }
-          const { data, error } = await supabase
-            .from('profiles')
-            .select('*')
-            .eq('id', firebaseUser.uid)
-            .maybeSingle();
+
+          // Supabase UUID check to prevent "invalid input syntax for type uuid"
+          const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(firebaseUser.uid);
+          
+          let query = supabase.from('profiles').select('*');
+          
+          if (isUUID) {
+            query = query.eq('id', firebaseUser.uid);
+          } else {
+            console.log("[AUTH] Non-UUID Firebase UID detected, falling back to email search:", firebaseUser.uid);
+            query = query.eq('email', firebaseUser.email);
+          }
+
+          const { data, error } = await query.maybeSingle();
           
           if (error) throw error;
 

@@ -384,7 +384,7 @@ const AdminProducts: React.FC = () => {
                 </button>
               </div>
 
-              <form onSubmit={handleSubmit} className="p-4 sm:p-8 space-y-4 sm:space-y-6 max-h-[75vh] overflow-y-auto custom-scrollbar">
+              <form id="product-form" onSubmit={handleSubmit} className="p-4 sm:p-8 space-y-4 sm:space-y-6 max-h-[75vh] overflow-y-auto custom-scrollbar">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-2">
                     <label className="text-sm font-bold text-zinc-700 uppercase tracking-wider">Product Name</label>
@@ -584,6 +584,7 @@ const AdminProducts: React.FC = () => {
                   Cancel
                 </Button>
                 <Button 
+                  form="product-form"
                   type="submit"
                   className="bg-indigo-600 hover:bg-indigo-700 text-white min-w-[120px]"
                   disabled={loading || uploadingImage}
