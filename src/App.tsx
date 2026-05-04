@@ -1,4 +1,4 @@
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, Outlet } from 'react-router-dom';
 import { AuthProvider, useAuth } from './hooks/useAuth';
 import { CartProvider } from './hooks/useCart';
 import { Toaster } from 'sonner';
@@ -50,12 +50,12 @@ const ProtectedRoute = ({ children, requireAdmin = false }: { children: React.Re
   return <>{children}</>;
 };
 
-function MainLayout({ children }: { children: React.ReactNode }) {
+function MainLayout() {
   return (
     <div className="flex min-h-screen flex-col bg-zinc-50 font-sans antialiased text-zinc-900">
       <Navbar />
       <main className="flex-1">
-        {children}
+        <Outlet />
       </main>
       <Footer />
       {/* WhatsApp Float */}
@@ -100,39 +100,32 @@ export default function App() {
               <Route path="banners" element={<AdminBanners />} />
             </Route>
 
-            {/* General Routes */}
-            <Route
-              path="*"
-              element={
-                <MainLayout>
-                  <Routes>
-                    <Route path="/" element={<Home />} />
-                    <Route path="/products" element={<Products />} />
-                    <Route path="/products/:slug" element={<ProductDetail />} />
-                    <Route path="/cart" element={<Cart />} />
-                    <Route path="/search" element={<Search />} />
-                    <Route path="/login" element={<Login />} />
-                    <Route
-                      path="/account"
-                      element={
-                        <ProtectedRoute>
-                          <Account />
-                        </ProtectedRoute>
-                      }
-                    />
-                    <Route
-                      path="/checkout"
-                      element={
-                        <ProtectedRoute>
-                          <Checkout />
-                        </ProtectedRoute>
-                      }
-                    />
-                    <Route path="*" element={<div className="container py-40 text-center text-4xl font-black uppercase tracking-tighter">Page Not Found</div>} />
-                  </Routes>
-                </MainLayout>
-              }
-            />
+            {/* General Routes with MainLayout */}
+            <Route element={<MainLayout />}>
+              <Route index element={<Home />} />
+              <Route path="/products" element={<Products />} />
+              <Route path="/products/:slug" element={<ProductDetail />} />
+              <Route path="/cart" element={<Cart />} />
+              <Route path="/search" element={<Search />} />
+              <Route path="/login" element={<Login />} />
+              <Route
+                path="/account"
+                element={
+                  <ProtectedRoute>
+                    <Account />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/checkout"
+                element={
+                  <ProtectedRoute>
+                    <Checkout />
+                  </ProtectedRoute>
+                }
+              />
+              <Route path="*" element={<div className="container py-40 text-center text-4xl font-black uppercase tracking-tighter">Page Not Found</div>} />
+            </Route>
           </Routes>
         </Router>
       </CartProvider>
