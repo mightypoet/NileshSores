@@ -352,8 +352,8 @@ export const dataService = {
 
   // UPLOADS (Vercel Blob via Proxy)
   async uploadImage(file: File, _bucket: string): Promise<string | null> {
-    const uploadUrl = '/api/upload';
-    console.log(`Starting image upload: ${file.name} to ${uploadUrl} (${(file.size / 1024).toFixed(1)} KB)`);
+    const uploadUrl = '/upload';
+    console.log(`[DATA SERVICE] Starting image upload: ${file.name} to ${uploadUrl}`);
     
     // Add a controller to handle timeouts
     const controller = new AbortController();
@@ -363,64 +363,44 @@ export const dataService = {
       const formData = new FormData();
       formData.append('file', file);
 
-      console.log(`Sending POST request to: ${window.location.origin}${uploadUrl}`);
+      console.log(`[DATA SERVICE] Fetching: ${uploadUrl}`);
       const response = await fetch(uploadUrl, {
         method: 'POST',
         body: formData,
-        signal: controller.signal
+        signal: controller.signal,
+        // Ensure we don't send any manual content-type, let the browser set boundary
       });
 
-      console.log(`Response Status: ${response.status}`);
-      console.log(`Response Headers:`, Object.fromEntries(response.headers.entries()));
-
+      console.log(`[DATA SERVICE] Status: ${response.status} ${response.statusText}`);
+      
+      const responseText = await response.text();
       clearTimeout(timeoutId);
 
-      let responseText = '';
-      try {
-        responseText = await response.text();
-      } catch (e) {
-        console.error("Could not read response text:", e);
-      }
-
       if (!response.ok) {
-        const contentType = response.headers.get("content-type");
-        let errorMessage = 'Failed to upload image';
-        
-        if (contentType && contentType.includes("application/json")) {
-          try {
-            const errorData = JSON.parse(responseText);
-            errorMessage = errorData.error || errorMessage;
-          } catch (e) {
-            errorMessage = `Status ${response.status}: ${responseText.substring(0, 100)}`;
+        console.error(`[DATA SERVICE] Upload failed: ${responseText}`);
+        let errorMessage = `Upload failed (${response.status})`;
+        try {
+          const errorData = JSON.parse(responseText);
+          errorMessage = errorData.error || errorMessage;
+        } catch (e) {
+          if (responseText.includes('<!DOCTYPE html>')) {
+            errorMessage = "Server returned HTML instead of JSON. This often means a 404 or 405 was intercepted by the frontend router.";
+          } else {
+            errorMessage = responseText.substring(0, 100);
           }
-        } else {
-          errorMessage = responseText || `Status ${response.status}`;
         }
-        
         throw new Error(errorMessage);
       }
 
-      try {
-        const { url } = JSON.parse(responseText);
-        
-        if (!url) {
-          throw new Error("Server responded successfully but returned no image URL");
-        }
-        
-        console.log("Image upload successful, URL:", url);
-        return url;
-      } catch (error: any) {
-        throw new Error(`Invalid JSON response from server: ${responseText.substring(0, 100)}`);
-      }
+      const data = JSON.parse(responseText);
+      if (!data.url) throw new Error("No URL returned from server");
+      
+      console.log("[DATA SERVICE] Upload success:", data.url);
+      return data.url;
     } catch (error: any) {
       clearTimeout(timeoutId);
-      if (error.name === 'AbortError') {
-        console.error("Upload Error: Request timed out after 60 seconds");
-        toast.error("Upload timed out. The file might be too large or the connection is slow.");
-      } else {
-        console.error("Error uploading image to Vercel Blob:", error);
-        toast.error(`Upload Error: ${error.message || 'Unknown error'}`);
-      }
+      console.error("[DATA SERVICE] Exception:", error);
+      toast.error(`Upload Error: ${error.message}`);
       return null;
     }
   },

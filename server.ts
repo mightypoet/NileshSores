@@ -21,73 +21,78 @@ async function startServer() {
   const app = express();
   const PORT = 3000;
 
-  // Middleware
-  app.use(cors({
-    origin: "*",
-    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization"]
-  }));
-  app.use(express.json());
-  app.use(express.urlencoded({ extended: true }));
-
-  // Request Logging
+  // 1. Logging Middleware (MUST BE FIRST)
   app.use((req, res, next) => {
-    console.log(`[${new Date().toISOString()}] ${req.method} ${req.url} (Path: ${req.path})`);
+    const timestamp = new Date().toISOString();
+    console.log(`[${timestamp}] ${req.method} ${req.url}`);
+    if (req.method === 'POST') {
+      console.log(`[${timestamp}] Content-Type: ${req.headers['content-type']}`);
+    }
     next();
   });
 
-  // API Routes - Define them directly on the app instance for maximum clarity
-  app.get("/api/health", (req, res) => {
-    console.log("Health check hit");
+  // 2. CORS
+  app.use(cors());
+  app.options("*", cors());
+
+  // 3. API Routes - Defined BEFORE any other middleware or Vite
+  // Root health check to verify server is alive
+  app.get("/healthz", (req, res) => {
     res.json({ 
-      status: "ok", 
-      timestamp: new Date().toISOString(),
-      env: {
-        nodeEnv: process.env.NODE_ENV,
-        hasBlobToken: !!process.env.BLOB_READ_WRITE_TOKEN
-      }
+      status: "alive", 
+      time: new Date().toISOString(),
+      blobToken: !!process.env.BLOB_READ_WRITE_TOKEN
     });
   });
 
-  // Simplified upload route directly on app
-  app.get("/api/upload", (req, res) => {
-    res.json({ message: "Upload endpoint exists. Please use POST to upload files." });
-  });
-
-  app.post("/api/upload", upload.single("file"), async (req: any, res) => {
-    console.log(`POST /api/upload reached - File: ${req.file?.originalname}`);
+  // CRITICAL: Dedicated Upload Route (moved to top and using unique name)
+  const handleUpload = async (req: any, res: any) => {
+    console.log(`[${new Date().toISOString()}] UPLOAD PROCESSING STARTED`);
     try {
       if (!req.file) {
-        console.error("No file in request");
+        console.error("No file received by Multer");
         return res.status(400).json({ error: "No file uploaded" });
       }
 
       const token = process.env.BLOB_READ_WRITE_TOKEN;
       if (!token) {
         console.error("Missing BLOB_READ_WRITE_TOKEN");
-        return res.status(500).json({ error: "Server configuration error: Token missing" });
+        return res.status(500).json({ error: "Server configuration missing: BLOB_READ_WRITE_TOKEN" });
       }
 
-      const filename = `products/${Date.now()}-${req.file.originalname.replace(/[^a-zA-Z0-9.]/g, '-')}`;
+      const filename = `uploads/${Date.now()}-${req.file.originalname.replace(/[^a-zA-Z0-9.]/g, '-')}`;
+      console.log(`Uploading to Vercel Blob: ${filename}`);
       
-      console.log(`Uploading ${filename} to Vercel Blob...`);
       const blob = await put(filename, req.file.buffer, {
         access: "public",
         token: token,
       });
 
-      console.log("Upload success:", blob.url);
+      console.log(`Upload Success: ${blob.url}`);
       res.json({ url: blob.url });
     } catch (error: any) {
       console.error("Upload handler exception:", error);
       res.status(500).json({ error: error.message });
     }
+  };
+
+  // Multiple paths including the one from dataService
+  app.post("/upload", upload.single("file"), handleUpload);
+  app.post("/api/upload", upload.single("file"), handleUpload);
+  app.post("/api/v1/upload", upload.single("file"), handleUpload);
+
+  // JSON Body Parser for other routes
+  app.use(express.json());
+  
+  // Test route to check if API is working
+  app.get("/api/test", (req, res) => {
+    res.json({ message: "API is working correctly" });
   });
 
-  // Explicitly handle 404 for any other /api routes to prevent falling through to Vite
+  // Catch-all for /api before Vite
   app.all("/api/*", (req, res) => {
-    console.log(`Unmatched API route: ${req.method} ${req.url}`);
-    res.status(404).json({ error: "API route not found" });
+    console.log(`Missed API route: ${req.method} ${req.url}`);
+    res.status(404).json({ error: `API route ${req.method} ${req.url} not found on server` });
   });
 
   // Vite middleware for development
