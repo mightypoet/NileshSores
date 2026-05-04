@@ -88,13 +88,13 @@ export default function ProductDetail() {
           <span className="text-[10px] font-black uppercase tracking-widest text-primary">{product.categoryId.replace('-', ' ')}</span>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-20">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 sm:gap-20">
           {/* Gallery */}
-          <div className="space-y-6">
+          <div className="space-y-4 sm:space-y-6">
             <motion.div 
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
-              className="aspect-square rounded-[3rem] bg-zinc-50 border border-zinc-100 overflow-hidden group p-12"
+              className="aspect-square rounded-2xl sm:rounded-[3rem] bg-zinc-50 border border-zinc-100 overflow-hidden group p-6 sm:p-12"
             >
               <img 
                 src={product.images[activeImage]} 
@@ -119,21 +119,20 @@ export default function ProductDetail() {
             </div>
           </div>
 
-          {/* Info */}
-          <div className="flex flex-col justify-center space-y-10">
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <Badge variant="accent" className="px-4 py-1">In Stock</Badge>
-                <div className="flex items-center gap-4">
-                  <button className="h-10 w-10 rounded-full bg-zinc-50 flex items-center justify-center text-zinc-400 hover:text-red-500 hover:bg-red-50 transition-colors">
-                    <Heart className="h-5 w-5" />
-                  </button>
-                  <button className="h-10 w-10 rounded-full bg-zinc-50 flex items-center justify-center text-zinc-400 hover:text-primary hover:bg-primary/5 transition-colors">
-                    <Share2 className="h-5 w-5" />
-                  </button>
+            <div className="flex flex-col justify-center space-y-6 sm:space-y-10">
+              <div className="space-y-3 sm:space-y-4">
+                <div className="flex items-center justify-between">
+                  <Badge variant="accent" className="px-3 sm:px-4 py-1">In Stock</Badge>
+                  <div className="flex items-center gap-2 sm:gap-4">
+                    <button className="h-8 w-8 sm:h-10 sm:w-10 rounded-full bg-zinc-50 flex items-center justify-center text-zinc-400 hover:text-red-500 hover:bg-red-50 transition-colors">
+                      <Heart className="h-4 w-4 sm:h-5 sm:w-5" />
+                    </button>
+                    <button className="h-8 w-8 sm:h-10 sm:w-10 rounded-full bg-zinc-50 flex items-center justify-center text-zinc-400 hover:text-primary hover:bg-primary/5 transition-colors">
+                      <Share2 className="h-4 w-4 sm:h-5 sm:w-5" />
+                    </button>
+                  </div>
                 </div>
-              </div>
-              <h1 className="text-5xl md:text-6xl font-black tracking-tighter leading-none">{product.name}</h1>
+                <h1 className="text-3xl sm:text-5xl md:text-6xl font-black tracking-tighter leading-none">{product.name}</h1>
               <div className="flex items-center gap-4">
                 <div className="flex items-center gap-1 text-accent">
                   {[...Array(5)].map((_, i) => (
@@ -144,12 +143,12 @@ export default function ProductDetail() {
               </div>
             </div>
 
-            <div className="flex items-baseline gap-6 pb-10 border-b border-zinc-100">
-              <span className="text-5xl font-black text-primary">₹{product.price}</span>
+            <div className="flex items-baseline gap-4 sm:gap-6 pb-6 sm:pb-10 border-b border-zinc-100">
+              <span className="text-3xl sm:text-5xl font-black text-primary">₹{product.price}</span>
               {product.mrp > product.price && (
                 <>
-                  <span className="text-2xl text-zinc-300 font-bold line-through">₹{product.mrp}</span>
-                  <span className="text-sm font-black uppercase tracking-widest text-green-500">Save {Math.round(((product.mrp - product.price) / product.mrp) * 100)}%</span>
+                  <span className="text-xl sm:text-2xl text-zinc-300 font-bold line-through">₹{product.mrp}</span>
+                  <span className="text-[10px] sm:text-sm font-black uppercase tracking-widest text-green-500">Save {Math.round(((product.mrp - product.price) / product.mrp) * 100)}%</span>
                 </>
               )}
             </div>

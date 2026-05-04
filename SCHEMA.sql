@@ -92,16 +92,16 @@ CREATE POLICY "Public Read Banners" ON banners FOR SELECT USING (true);
 
 -- Allow all for now (DEVELOPMENT ONLY) - Disable this in production!
 DROP POLICY IF EXISTS "Allow All Categories" ON categories;
-CREATE POLICY "Allow All Categories" ON categories FOR ALL USING (true);
+CREATE POLICY "Allow All Categories" ON categories FOR ALL USING (true) WITH CHECK (true);
 
 DROP POLICY IF EXISTS "Allow All Products" ON products;
-CREATE POLICY "Allow All Products" ON products FOR ALL USING (true);
+CREATE POLICY "Allow All Products" ON products FOR ALL USING (true) WITH CHECK (true);
 
 DROP POLICY IF EXISTS "Allow All Profiles" ON profiles;
-CREATE POLICY "Allow All Profiles" ON profiles FOR ALL USING (true);
+CREATE POLICY "Allow All Profiles" ON profiles FOR ALL USING (true) WITH CHECK (true);
 
 DROP POLICY IF EXISTS "Allow All Banners" ON banners;
-CREATE POLICY "Allow All Banners" ON banners FOR ALL USING (true);
+CREATE POLICY "Allow All Banners" ON banners FOR ALL USING (true) WITH CHECK (true);
 
 DROP POLICY IF EXISTS "Allow All Orders" ON orders;
-CREATE POLICY "Allow All Orders" ON orders FOR ALL USING (true);
+CREATE POLICY "Allow All Orders" ON orders FOR ALL USING (true) WITH CHECK (true);

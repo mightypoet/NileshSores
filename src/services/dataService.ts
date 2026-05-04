@@ -352,7 +352,7 @@ export const dataService = {
 
   // UPLOADS (Vercel Blob via Proxy)
   async uploadImage(file: File, _bucket: string): Promise<string | null> {
-    const uploadUrl = '/api/file-upload';
+    const uploadUrl = '/api/v1/storage/upload';
     console.log(`[DATA SERVICE] Starting image upload: ${file.name} to ${uploadUrl}`);
     
     // Add a controller to handle timeouts

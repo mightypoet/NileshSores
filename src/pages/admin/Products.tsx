@@ -352,7 +352,7 @@ const AdminProducts: React.FC = () => {
       {/* Modal - Product Form */}
       <AnimatePresence>
         {isModalOpen && (
-          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6 overflow-y-auto">
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-2 sm:p-4 overflow-y-auto">
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -364,10 +364,10 @@ const AdminProducts: React.FC = () => {
               initial={{ opacity: 0, scale: 0.95, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="relative bg-white w-full max-w-2xl rounded-2xl shadow-2xl overflow-hidden"
+              className="relative bg-white w-full max-w-2xl rounded-xl sm:rounded-2xl shadow-2xl overflow-hidden my-4"
             >
-              <div className="px-8 py-6 border-b border-zinc-100 flex items-center justify-between bg-zinc-50">
-                <h2 className="text-xl font-bold text-zinc-900">
+              <div className="px-4 sm:px-8 py-4 sm:py-6 border-b border-zinc-100 flex items-center justify-between bg-zinc-50">
+                <h2 className="text-lg sm:text-xl font-bold text-zinc-900">
                   {editingProduct ? 'Edit Product' : 'Add New Product'}
                 </h2>
                 <button 
@@ -378,7 +378,7 @@ const AdminProducts: React.FC = () => {
                 </button>
               </div>
 
-              <form onSubmit={handleSubmit} className="p-8 space-y-6 max-h-[70vh] overflow-y-auto">
+              <form onSubmit={handleSubmit} className="p-4 sm:p-8 space-y-4 sm:space-y-6 max-h-[75vh] overflow-y-auto custom-scrollbar">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-2">
                     <label className="text-sm font-bold text-zinc-700 uppercase tracking-wider">Product Name</label>

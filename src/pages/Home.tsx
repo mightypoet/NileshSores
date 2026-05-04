@@ -102,14 +102,9 @@ export default function Home() {
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: 0.3 }}
-                      className="text-6xl md:text-8xl font-black text-zinc-900 leading-[1.05] tracking-tighter"
+                      className="text-4xl sm:text-6xl md:text-8xl font-black text-zinc-900 leading-[1.05] tracking-tighter"
                     >
-                      {banner.title.split(' ').map((word, i) => (
-                        <React.Fragment key={i}>
-                          {i === 2 ? <br /> : ' '}
-                          {word}
-                        </React.Fragment>
-                      ))}
+                      {banner.title}
                     </motion.h1>
                     <motion.p 
                       initial={{ opacity: 0, y: 20 }}
@@ -159,7 +154,7 @@ export default function Home() {
                   <div className="inline-flex items-center gap-2 px-4 py-2 bg-white rounded-full text-[10px] font-black uppercase tracking-[0.2em] shadow-sm border border-zinc-100">
                     <Sparkles className="h-3 w-3 text-accent" /> Premium Collection 2026
                   </div>
-                  <h1 className="text-6xl md:text-8xl font-black text-zinc-900 leading-[1.05] tracking-tighter">
+                  <h1 className="text-4xl sm:text-6xl md:text-8xl font-black text-zinc-900 leading-[1.05] tracking-tighter">
                     Every Idea <br />
                     <span className="text-primary italic">Starts Here.</span>
                   </h1>
@@ -195,10 +190,10 @@ export default function Home() {
 
       {/* Featured Categories */}
       <section className="container mx-auto px-4">
-        <div className="flex flex-col md:flex-row justify-between items-end gap-8 mb-16">
-          <div className="space-y-4">
-            <h2 className="text-xs font-black uppercase tracking-[0.3em] text-primary">Discover</h2>
-            <h3 className="text-5xl font-black tracking-tighter">Iconic Categories</h3>
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 mb-12 sm:mb-16">
+          <div className="space-y-2 sm:space-y-4">
+            <h2 className="text-[10px] sm:text-xs font-black uppercase tracking-[0.3em] text-primary">Discover</h2>
+            <h3 className="text-3xl sm:text-5xl font-black tracking-tighter">Iconic Categories</h3>
           </div>
           <Link to="/products" className="group flex items-center gap-2 text-sm font-bold text-zinc-400 hover:text-primary transition-colors">
             See all categories <ChevronRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
