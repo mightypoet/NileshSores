@@ -29,13 +29,13 @@ const mapProductToDb = (p: any): any => {
   } = p;
   
   const mapped: any = { ...rest };
-  // Using camelCase as primary for mapped keys if they were created that way in DB
-  if (reviewsCount !== undefined) { mapped.reviews_count = reviewsCount; mapped.reviewsCount = reviewsCount; }
-  if (gstRate !== undefined) { mapped.gst_rate = gstRate; mapped.gstRate = gstRate; }
-  if (categoryId !== undefined) { mapped.category_id = categoryId; mapped.categoryId = categoryId; }
-  if (isBestSeller !== undefined) { mapped.is_best_seller = isBestSeller; mapped.isBestSeller = isBestSeller; }
-  if (createdAt !== undefined) { mapped.created_at = createdAt; mapped.createdAt = createdAt; }
-  if (updatedAt !== undefined) { mapped.updated_at = updatedAt; mapped.updatedAt = updatedAt; }
+  // Standard snake_case mapping for DB
+  if (reviewsCount !== undefined) mapped.reviews_count = reviewsCount;
+  if (gstRate !== undefined) mapped.gst_rate = gstRate;
+  if (categoryId !== undefined) mapped.category_id = categoryId;
+  if (isBestSeller !== undefined) mapped.is_best_seller = isBestSeller;
+  if (createdAt !== undefined) mapped.created_at = createdAt;
+  if (updatedAt !== undefined) mapped.updated_at = updatedAt;
   
   return mapped;
 };
@@ -49,8 +49,8 @@ const mapCategoryFromDb = (c: any): Category => ({
 const mapCategoryToDb = (c: any): any => {
   const { parentId, sortOrder, ...rest } = c;
   const mapped: any = { ...rest };
-  if (parentId !== undefined) { mapped.parent_id = parentId; mapped.parentId = parentId; }
-  if (sortOrder !== undefined) { mapped.sort_order = sortOrder; mapped.sortOrder = sortOrder; }
+  if (parentId !== undefined) mapped.parent_id = parentId;
+  if (sortOrder !== undefined) mapped.sort_order = sortOrder;
   return mapped;
 };
 
@@ -87,16 +87,16 @@ const mapOrderToDb = (o: any): any => {
   } = o;
   
   const mapped: any = { ...rest };
-  // Use both variants to be compatible with whatever schema the user actually has
-  if (orderNumber !== undefined) { mapped.order_number = orderNumber; mapped.orderNumber = orderNumber; }
-  if (userId !== undefined) { mapped.user_id = userId; mapped.userId = userId; }
-  if (gstAmount !== undefined) { mapped.gst_amount = gstAmount; mapped.gstAmount = gstAmount; }
-  if (shippingCharge !== undefined) { mapped.shipping_charge = shippingCharge; mapped.shippingCharge = shippingCharge; }
-  if (grandTotal !== undefined) { mapped.grand_total = grandTotal; mapped.grandTotal = grandTotal; }
-  if (paymentStatus !== undefined) { mapped.payment_status = paymentStatus; mapped.paymentStatus = paymentStatus; }
-  if (paymentMethod !== undefined) { mapped.payment_method = paymentMethod; mapped.paymentMethod = paymentMethod; }
-  if (shippingAddress !== undefined) { mapped.shipping_address = shippingAddress; mapped.shippingAddress = shippingAddress; }
-  if (createdAt !== undefined) { mapped.created_at = createdAt; mapped.createdAt = createdAt; }
+  // Standard snake_case mapping for DB
+  if (orderNumber !== undefined) mapped.order_number = orderNumber;
+  if (userId !== undefined) mapped.user_id = userId;
+  if (gstAmount !== undefined) mapped.gst_amount = gstAmount;
+  if (shippingCharge !== undefined) mapped.shipping_charge = shippingCharge;
+  if (grandTotal !== undefined) mapped.grand_total = grandTotal;
+  if (paymentStatus !== undefined) mapped.payment_status = paymentStatus;
+  if (paymentMethod !== undefined) mapped.payment_method = paymentMethod;
+  if (shippingAddress !== undefined) mapped.shipping_address = shippingAddress;
+  if (createdAt !== undefined) mapped.created_at = createdAt;
   
   return mapped;
 };

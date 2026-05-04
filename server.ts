@@ -20,82 +20,63 @@ const upload = multer({
 const app = express();
 const PORT = 3000;
 
-async function setupApp() {
-  console.log(">>> [SERVER] Setting up routes...");
+// 1. Logging Middleware
+app.use((req, res, next) => {
+  const timestamp = new Date().toISOString();
+  console.log(`[${timestamp}] REQUEST: ${req.method} ${req.url}`);
+  next();
+});
 
-  // 1. Logging Middleware (MUST BE FIRST)
-  app.use((req, res, next) => {
-    const timestamp = new Date().toISOString();
-    console.log(`[${timestamp}] REQUEST: ${req.method} ${req.url}`);
-    next();
-  });
+// 2. CORS
+app.use(cors());
+app.options("*", cors());
 
-  // 2. CORS
-  app.use(cors());
-  app.options("*", cors());
+// 3. API Routes
+app.all("/api/health", (req, res) => {
+  res.json({ status: "ok", time: new Date().toISOString() });
+});
 
-  // 3. API Routes
-  app.all("/api/health", (req, res) => {
-    res.json({ status: "ok", time: new Date().toISOString() });
-  });
-
-  const handleUpload = async (req: any, res: any) => {
-    console.log(`>>> [SERVER] Incoming upload request: ${req.file ? req.file.originalname : 'No file'}`);
-    try {
-      if (!process.env.BLOB_READ_WRITE_TOKEN) {
-        console.error(">>> [SERVER] Upload failed: BLOB_READ_WRITE_TOKEN is missing");
-        return res.status(500).json({ error: "Server configuration error: Upload token missing." });
-      }
-
-      if (!req.file) {
-        console.error(">>> [SERVER] Upload failed: No file found in request");
-        return res.status(400).json({ error: "No file uploaded. Make sure the field name is 'file'." });
-      }
-      
-      const timestamp = Date.now();
-      const safeName = req.file.originalname.replace(/[^a-zA-Z0-9.]/g, '-');
-      const filename = `uploads/${timestamp}-${safeName}`;
-      
-      console.log(`>>> [SERVER] Uploading: ${filename} (${req.file.mimetype})`);
-      
-      const blob = await put(filename, req.file.buffer, { 
-        access: "public", 
-        token: process.env.BLOB_READ_WRITE_TOKEN,
-        contentType: req.file.mimetype
-      });
-      
-      console.log(`>>> [SERVER] SUCCESS: ${blob.url}`);
-      return res.status(200).json({ url: blob.url });
-    } catch (error: any) {
-      console.error(">>> [SERVER] FATAL UPLOAD ERROR:", error);
-      return res.status(500).json({ error: `Server Upload Error: ${error.message}` });
+const handleUpload = async (req: any, res: any) => {
+  console.log(`>>> [SERVER] Incoming upload request: ${req.file ? req.file.originalname : 'No file'}`);
+  try {
+    if (!process.env.BLOB_READ_WRITE_TOKEN) {
+      console.error(">>> [SERVER] Upload failed: BLOB_READ_WRITE_TOKEN is missing");
+      return res.status(500).json({ error: "Server configuration error: Upload token missing." });
     }
-  };
 
-  // Use multiple variants for maximum compatibility
-  app.post("/api/storage/v2/upload", upload.single("file"), handleUpload);
-  app.post("/api/storage/v1/upload", upload.single("file"), handleUpload);
-  app.post("/api/v1/storage/upload", upload.single("file"), handleUpload);
-  
-  // Explicitly handle all methods for /api/upload to diagnose 405s
-  app.all("/api/upload", (req, res, next) => {
-    console.log(`>>> [SERVER] /api/upload hit with method: ${req.method}`);
-    if (req.method === 'POST') {
-      next();
-    } else {
-      res.status(405).json({ 
-        error: "Method Not Allowed. Please use POST.",
-        receivedMethod: req.method
-      });
+    if (!req.file) {
+      console.error(">>> [SERVER] Upload failed: No file found in request");
+      return res.status(400).json({ error: "No file uploaded. Make sure the field name is 'file'." });
     }
-  });
-  app.post("/api/upload", upload.single("file"), handleUpload);
-  app.post("/upload", upload.single("file"), handleUpload);
+    
+    const timestamp = Date.now();
+    const safeName = req.file.originalname.replace(/[^a-zA-Z0-9.]/g, '-');
+    const filename = `uploads/${timestamp}-${safeName}`;
+    
+    console.log(`>>> [SERVER] Uploading: ${filename} (${req.file.mimetype})`);
+    
+    const blob = await put(filename, req.file.buffer, { 
+      access: "public", 
+      token: process.env.BLOB_READ_WRITE_TOKEN,
+      contentType: req.file.mimetype
+    });
+    
+    console.log(`>>> [SERVER] SUCCESS: ${blob.url}`);
+    return res.status(200).json({ url: blob.url });
+  } catch (error: any) {
+    console.error(">>> [SERVER] FATAL UPLOAD ERROR:", error);
+    return res.status(500).json({ error: `Server Upload Error: ${error.message}` });
+  }
+};
 
-  app.use(express.json());
-  app.use(express.urlencoded({ extended: true }));
+// Routes registered synchronously
+app.post("/api/upload", upload.single("file"), handleUpload);
+app.post("/upload", upload.single("file"), handleUpload);
 
-  // 4. Vite / Static
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
+async function setupVite() {
   if (process.env.NODE_ENV !== "production") {
     console.log(">>> [SERVER] Initializing Vite in middleware mode...");
     const vite = await createViteServer({
@@ -121,13 +102,16 @@ async function setupApp() {
 
 // Start the server if running directly
 if (process.env.NODE_ENV !== "production" || !process.env.VERCEL) {
-  setupApp().then(() => {
+  setupVite().then(() => {
     app.listen(PORT, "0.0.0.0", () => {
       console.log(`>>> [SERVER] Running on http://0.0.0.0:${PORT}`);
     });
   });
+} else {
+  // In production/Vercel, we still need to serve static files if it's hitting the root
+  // but Vercel manages the entry point.
+  // We'll call setupVite to register the static file handler
+  setupVite();
 }
 
-// Export for Vercel
-setupApp();
 export default app;
