@@ -27,6 +27,19 @@ const supabaseAdmin = (supabaseUrl && supabaseServiceKey)
     })
   : null;
 
+// Initial bucket setup attempt
+if (supabaseAdmin) {
+  supabaseAdmin.storage.createBucket('product-images', { public: true })
+    .then(({ data, error }) => {
+      if (error && error.message !== 'Bucket already exists') {
+        console.error(">>> [SERVER] Failed to ensure bucket 'product-images' exists:", error.message);
+      } else {
+        console.log(">>> [SERVER] Supabase bucket 'product-images' is ready.");
+      }
+    })
+    .catch(err => console.error(">>> [SERVER] Error checking bucket:", err));
+}
+
 // Configure multer for memory storage
 const storage = multer.memoryStorage();
 const upload = multer({ 
@@ -40,7 +53,9 @@ const PORT = 3000;
 // 1. Logging Middleware
 app.use((req, res, next) => {
   const timestamp = new Date().toISOString();
-  console.log(`[${timestamp}] REQUEST: ${req.method} ${req.url}`);
+  if (req.url.startsWith('/api')) {
+    console.log(`[${timestamp}] API REQUEST: ${req.method} ${req.url}`);
+  }
   next();
 });
 
@@ -50,15 +65,20 @@ app.options("*", cors());
 
 // 3. API Routes
 app.all("/api/health", (req, res) => {
-  res.json({ status: "ok", time: new Date().toISOString() });
+  res.json({ 
+    status: "ok", 
+    time: new Date().toISOString(),
+    supabaseInitialized: !!supabaseAdmin,
+    bucketReady: 'checking'
+  });
 });
 
 const handleUpload = async (req: any, res: any) => {
   console.log(`>>> [SERVER] Incoming upload request: ${req.file ? req.file.originalname : 'No file'}`);
   try {
     if (!supabaseAdmin) {
-      console.error(">>> [SERVER] Upload failed: Supabase Admin client not initialized");
-      return res.status(500).json({ error: "Server configuration error: Supabase Service Role Key missing." });
+      console.error(">>> [SERVER] Upload failed: Supabase Admin client not initialized. Check your SUPABASE_SERVICE_ROLE_KEY secret.");
+      return res.status(500).json({ error: "Server configuration error: Supabase Service Role Key missing in environment variables." });
     }
 
     if (!req.file) {
@@ -83,7 +103,7 @@ const handleUpload = async (req: any, res: any) => {
     
     if (uploadError) {
       console.error(">>> [SERVER] Supabase Storage Upload Error:", uploadError);
-      return res.status(500).json({ error: `Storage Error: ${uploadError.message}` });
+      return res.status(500).json({ error: `Storage Error: ${uploadError.message}. Make sure the bucket 'product-images' exists and is public.` });
     }
 
     // Get Public URL
