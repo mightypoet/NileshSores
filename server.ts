@@ -5,13 +5,15 @@ import path from "path";
 import { fileURLToPath } from "url";
 import multer from "multer";
 import { put } from "@vercel/blob";
+import cors from "cors";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Configure multer for memory storage with a 10MB limit
+// Configure multer for memory storage
+const storage = multer.memoryStorage();
 const upload = multer({ 
-  storage: multer.memoryStorage(),
+  storage,
   limits: { fileSize: 10 * 1024 * 1024 } // 10MB
 });
 
@@ -19,79 +21,66 @@ async function startServer() {
   const app = express();
   const PORT = 3000;
 
-  // Request Logging Middleware
-  app.use((req, res, next) => {
-    console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
-    next();
-  });
-
+  // Middleware
+  app.use(cors());
   app.use(express.json());
+  app.use(express.urlencoded({ extended: true }));
 
-  // API routes (Must be BEFORE static/Vite middleware)
-  app.get("/api/health", (req, res) => {
-    res.json({ status: "ok", timestamp: new Date().toISOString() });
+  // Request Logging
+  app.use((req, res, next) => {
+    console.log(`[${new Date().toISOString()}] ${req.method} ${req.path}`);
+    next();
   });
 
-  // Vercel Blob Upload Route
-  app.post("/api/product-images/upload", (req, res, next) => {
-    // Add specific logging for upload attempt
-    console.log("POST /api/product-images/upload - Multipart request received");
-    next();
-  }, upload.single("file"), async (req: any, res) => {
+  // API Routes
+  const apiRouter = express.Router();
+
+  apiRouter.get("/health", (req, res) => {
+    res.json({ 
+      status: "ok", 
+      timestamp: new Date().toISOString(),
+      env: {
+        nodeEnv: process.env.NODE_ENV,
+        hasBlobToken: !!process.env.BLOB_READ_WRITE_TOKEN
+      }
+    });
+  });
+
+  // Simplified upload route
+  apiRouter.post("/upload", upload.single("file"), async (req: any, res) => {
+    console.log("POST /api/upload reached");
     try {
       if (!req.file) {
-        console.error("Upload Error: No file in request. Body keys:", Object.keys(req.body));
-        return res.status(400).json({ error: "No file uploaded. Please ensure the 'file' field is present in the multipart form." });
+        return res.status(400).json({ error: "No file uploaded" });
       }
-
-      console.log(`File received: ${req.file.originalname}, Size: ${req.file.size}, Type: ${req.file.mimetype}`);
 
       const token = process.env.BLOB_READ_WRITE_TOKEN;
       if (!token) {
-        console.error("Critical Error: BLOB_READ_WRITE_TOKEN is missing from environment variables!");
-        return res.status(500).json({ error: "Backend configuration error: BLOB_READ_WRITE_TOKEN is not set." });
+        console.error("Missing BLOB_READ_WRITE_TOKEN");
+        return res.status(500).json({ error: "Server configuration error" });
       }
 
-      // Generate a clean filename to avoid bucket issues
-      const timestamp = Date.now();
-      const cleanName = req.file.originalname.replace(/[^a-zA-Z0-9.]/g, '-');
-      const pathname = `products/${timestamp}-${cleanName}`;
-
-      console.log(`Uploading to Vercel Blob: ${pathname}...`);
-
-      const blob = await put(pathname, req.file.buffer, {
+      const filename = `products/${Date.now()}-${req.file.originalname.replace(/[^a-zA-Z0-9.]/g, '-')}`;
+      
+      const blob = await put(filename, req.file.buffer, {
         access: "public",
         token: token,
       });
 
-      console.log("Vercel Blob upload success:", blob.url);
+      console.log("Upload success:", blob.url);
       res.json({ url: blob.url });
     } catch (error: any) {
-      console.error("Vercel Blob Upload Exception:", error);
-      res.status(500).json({ 
-        error: error.message || "Internal server error during upload",
-        details: process.env.NODE_ENV === 'development' ? error.stack : undefined
-      });
+      console.error("Upload error:", error);
+      res.status(500).json({ error: error.message });
     }
   });
 
-  // Global Error Handler for API routes
-  app.use("/api", (err: any, req: any, res: any, next: any) => {
-    console.error("Unhandled API Error:", err);
-    res.status(500).json({ error: "Internal API Error", details: err.message });
-  });
+  app.use("/api", apiRouter);
 
   // Vite middleware for development
   if (process.env.NODE_ENV !== "production") {
     const vite = await createViteServer({
-      server: { 
-        middlewareMode: true,
-        watch: {
-          usePolling: true,
-          interval: 100
-        },
-        hmr: false
-      },
+      server: { middlewareMode: true },
       appType: "spa",
     });
     app.use(vite.middlewares);
@@ -108,7 +97,4 @@ async function startServer() {
   });
 }
 
-startServer().catch((err) => {
-  console.error("Failed to start server:", err);
-  process.exit(1);
-});
+startServer().catch(console.error);

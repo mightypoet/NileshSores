@@ -362,8 +362,8 @@ export const dataService = {
       const formData = new FormData();
       formData.append('file', file);
 
-      console.log(`Sending upload request to: /api/product-images/upload`);
-      const response = await fetch('/api/product-images/upload', {
+      console.log(`Sending upload request to: /api/upload`);
+      const response = await fetch('/api/upload', {
         method: 'POST',
         body: formData,
         signal: controller.signal
