@@ -251,10 +251,10 @@ const AdminProducts: React.FC = () => {
             <thead>
               <tr className="bg-zinc-50 border-b border-zinc-200">
                 <th className="px-6 py-4 text-xs font-bold text-zinc-500 uppercase tracking-wider">Product</th>
-                <th className="px-6 py-4 text-xs font-bold text-zinc-500 uppercase tracking-wider">Category</th>
+                <th className="px-6 py-4 text-xs font-bold text-zinc-500 uppercase tracking-wider hidden md:table-cell">Category</th>
                 <th className="px-6 py-4 text-xs font-bold text-zinc-500 uppercase tracking-wider">Price</th>
-                <th className="px-6 py-4 text-xs font-bold text-zinc-500 uppercase tracking-wider">Stock</th>
-                <th className="px-6 py-4 text-xs font-bold text-zinc-500 uppercase tracking-wider">Status</th>
+                <th className="px-6 py-4 text-xs font-bold text-zinc-500 uppercase tracking-wider hidden lg:table-cell">Stock</th>
+                <th className="px-6 py-4 text-xs font-bold text-zinc-500 uppercase tracking-wider hidden sm:table-cell">Status</th>
                 <th className="px-6 py-4 text-xs font-bold text-zinc-500 uppercase tracking-wider text-right">Actions</th>
               </tr>
             </thead>
@@ -276,7 +276,7 @@ const AdminProducts: React.FC = () => {
                   <tr key={product.id} className="hover:bg-zinc-50 transition-colors group">
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-4">
-                        <div className="w-12 h-12 rounded-lg bg-zinc-100 flex-shrink-0 overflow-hidden border border-zinc-200">
+                        <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg bg-zinc-100 flex-shrink-0 overflow-hidden border border-zinc-200">
                           <img 
                             src={product.images[0] || 'https://via.placeholder.com/150'} 
                             alt={product.name} 
@@ -284,31 +284,31 @@ const AdminProducts: React.FC = () => {
                             referrerPolicy="no-referrer"
                           />
                         </div>
-                        <div>
-                          <p className="font-semibold text-zinc-900 leading-tight">{product.name}</p>
-                          <p className="text-xs text-zinc-500 mt-1">SKU: {product.sku}</p>
+                        <div className="min-w-0">
+                          <p className="font-semibold text-zinc-900 leading-tight truncate max-w-[120px] sm:max-w-none">{product.name}</p>
+                          <p className="text-[10px] sm:text-xs text-zinc-500 mt-1">SKU: {product.sku}</p>
                         </div>
                       </div>
                     </td>
-                    <td className="px-6 py-4">
+                    <td className="px-6 py-4 hidden md:table-cell">
                       <span className="text-sm text-zinc-600">
                         {categories.find(c => c.id === product.categoryId)?.name || 'Uncategorized'}
                       </span>
                     </td>
-                    <td className="px-6 py-4">
+                    <td className="px-6 py-4 whitespace-nowrap">
                       <div>
                         <p className="text-sm font-bold text-zinc-900">₹{product.price.toLocaleString()}</p>
-                        <p className="text-xs text-zinc-400 line-through">₹{product.mrp.toLocaleString()}</p>
+                        <p className="text-[10px] text-zinc-400 line-through">₹{product.mrp.toLocaleString()}</p>
                       </div>
                     </td>
-                    <td className="px-6 py-4">
+                    <td className="px-6 py-4 hidden lg:table-cell">
                       <div className="flex items-center gap-2">
                         <div className={`w-2 h-2 rounded-full ${product.stock > 10 ? 'bg-green-500' : 'bg-red-500'}`}></div>
                         <span className="text-sm font-medium">{product.stock} units</span>
                       </div>
                     </td>
-                    <td className="px-6 py-4">
-                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                    <td className="px-6 py-4 hidden sm:table-cell whitespace-nowrap">
+                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-medium ${
                         product.status === 'active' ? 'bg-green-50 text-green-700 border border-green-200' :
                         product.status === 'draft' ? 'bg-zinc-100 text-zinc-700 border border-zinc-200' :
                         'bg-red-50 text-red-700 border border-red-200'

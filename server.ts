@@ -54,6 +54,7 @@ async function startServer() {
       }
     };
 
+    app.post("/api/file-upload", upload.single("file"), handleUpload);
     app.post("/upload", upload.single("file"), handleUpload);
     app.post("/api/upload", upload.single("file"), handleUpload);
     app.post("/api/v1/upload", upload.single("file"), handleUpload);
