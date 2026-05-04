@@ -3,78 +3,10 @@ import { Product, Category, Banner, Order, UserProfile } from '../types';
 import { products as mockProducts, categories as mockCategories } from '../data/mockData';
 import { toast } from 'sonner';
 
-// Helper to map DB snake_case to UI camelCase
-const mapProductFromDb = (p: any): Product => ({
-  ...p,
-  reviewsCount: p.reviews_count,
-  gstRate: p.gst_rate,
-  categoryId: p.category_id,
-  isBestSeller: p.is_best_seller,
-  createdAt: p.created_at,
-  updatedAt: p.updated_at,
-  categoryName: p.categories?.name
-});
-
-// Helper to map UI camelCase to DB snake_case
-const mapProductToDb = (p: any): any => {
-  const { 
-    reviewsCount, 
-    gstRate, 
-    categoryId, 
-    isBestSeller, 
-    createdAt, 
-    updatedAt, 
-    categoryName,
-    ...rest 
-  } = p;
-  
-  const mapped: any = { ...rest };
-  if (reviewsCount !== undefined) mapped.reviews_count = reviewsCount;
-  if (gstRate !== undefined) mapped.gst_rate = gstRate;
-  if (categoryId !== undefined) mapped.category_id = categoryId;
-  if (isBestSeller !== undefined) mapped.is_best_seller = isBestSeller;
-  if (createdAt !== undefined) mapped.created_at = createdAt;
-  if (updatedAt !== undefined) mapped.updated_at = updatedAt;
-  
-  return mapped;
-};
-
-const mapCategoryFromDb = (c: any): Category => ({
-  ...c,
-  parentId: c.parent_id,
-  sortOrder: c.sort_order
-});
-
-const mapCategoryToDb = (c: any): any => {
-  const { parentId, sortOrder, ...rest } = c;
-  const mapped: any = { ...rest };
-  if (parentId !== undefined) mapped.parent_id = parentId;
-  if (sortOrder !== undefined) mapped.sort_order = sortOrder;
-  return mapped;
-};
-
-const mapOrderFromDb = (o: any): Order => ({
-  ...o,
-  orderNumber: o.order_number,
-  userId: o.user_id,
-  gstAmount: o.gst_amount,
-  shippingCharge: o.shipping_charge,
-  grandTotal: o.grand_total,
-  paymentStatus: o.payment_status,
-  paymentMethod: o.payment_method,
-  shippingAddress: o.shipping_address,
-  createdAt: o.created_at
-});
-
-const mapUserFromDb = (u: any): UserProfile => ({
-  ...u,
-  createdAt: u.created_at
-});
-
 export const dataService = {
   // PRODUCTS
   async getProducts(): Promise<Product[]> {
-    if (!supabase) return mockProducts;
+    if (!supabase) return mockProducts as any;
     try {
       const { data, error } = await supabase
         .from('products')
@@ -89,18 +21,17 @@ export const dataService = {
       
       if (error) throw error;
       
-      if (data && data.length > 0) return data.map(mapProductFromDb);
-      return mockProducts;
+      return data || [];
     } catch (error) {
       console.error("Error fetching products from Supabase:", error);
-      return mockProducts;
+      return mockProducts as any;
     }
   },
 
   async getProductBySlug(slug: string): Promise<Product | null> {
     if (!supabase) {
       const mockProduct = mockProducts.find(p => p.slug === slug);
-      return mockProduct || null;
+      return (mockProduct as any) || null;
     }
     try {
       const { data, error } = await supabase
@@ -120,19 +51,18 @@ export const dataService = {
         throw error;
       }
       
-      return mapProductFromDb(data);
+      return data;
     } catch (error) {
       console.error("Error fetching product by slug from Supabase:", error);
       const mockProduct = mockProducts.find(p => p.slug === slug);
-      return mockProduct || null;
+      return (mockProduct as any) || null;
     }
   },
 
   async createProduct(product: Partial<Product>): Promise<Product | null> {
     if (!supabase) return null;
     try {
-      const { id, ...rest } = product as any;
-      const payload = mapProductToDb(rest);
+      const { id, ...payload } = product as any;
       
       const { data, error } = await supabase
         .from('products')
@@ -144,7 +74,7 @@ export const dataService = {
         console.error("Supabase Error [createProduct]:", error.message, error.details, error.hint);
         throw error;
       }
-      return mapProductFromDb(data);
+      return data;
     } catch (error: any) {
       console.error("Error creating product in Supabase:", error);
       toast.error(`Create Error: ${error.message || 'Unknown error'}`);
@@ -155,10 +85,7 @@ export const dataService = {
   async updateProduct(id: string, updates: Partial<Product>): Promise<Product | null> {
     if (!supabase) return null;
     try {
-      const { id: _, ...rest } = updates as any;
-      const payload = mapProductToDb(rest);
-      // Ensure we don't try to update created_at
-      delete payload.created_at;
+      const { id: _, created_at: __, categories: ___, ...payload } = updates as any;
       
       const { data, error } = await supabase
         .from('products')
@@ -171,7 +98,7 @@ export const dataService = {
         console.error("Supabase Error [updateProduct]:", error.message, error.details, error.hint);
         throw error;
       }
-      return mapProductFromDb(data);
+      return data;
     } catch (error: any) {
       console.error("Error updating product in Supabase:", error);
       toast.error(`Update Error: ${error.message || 'Unknown error'}`);
@@ -201,7 +128,7 @@ export const dataService = {
 
   // CATEGORIES
   async getCategories(): Promise<Category[]> {
-    if (!supabase) return mockCategories;
+    if (!supabase) return mockCategories as any;
     try {
       const { data, error } = await supabase
         .from('categories')
@@ -209,19 +136,17 @@ export const dataService = {
         .order('name');
       
       if (error) throw error;
-      if (data && data.length > 0) return data.map(mapCategoryFromDb);
-      return mockCategories;
+      return data || [];
     } catch (error) {
       console.error("Error fetching categories from Supabase:", error);
-      return mockCategories;
+      return mockCategories as any;
     }
   },
 
   async createCategory(category: Partial<Category>): Promise<Category | null> {
     if (!supabase) return null;
     try {
-      const { id, ...rest } = category as any;
-      const payload = mapCategoryToDb(rest);
+      const { id, ...payload } = category as any;
       
       const { data, error } = await supabase
         .from('categories')
@@ -233,7 +158,7 @@ export const dataService = {
         console.error("Supabase Error [createCategory]:", error.message, error.details, error.hint);
         throw error;
       }
-      return mapCategoryFromDb(data);
+      return data;
     } catch (error: any) {
       console.error("Error creating category in Supabase:", error);
       toast.error(`Create Error: ${error.message || 'Unknown error'}`);
@@ -244,8 +169,7 @@ export const dataService = {
   async updateCategory(id: string, updates: Partial<Category>): Promise<Category | null> {
     if (!supabase) return null;
     try {
-      const { id: _, ...rest } = updates as any;
-      const payload = mapCategoryToDb(rest);
+      const { id: _, ...payload } = updates as any;
       
       const { data, error } = await supabase
         .from('categories')
@@ -258,7 +182,7 @@ export const dataService = {
         console.error("Supabase Error [updateCategory]:", error.message, error.details, error.hint);
         throw error;
       }
-      return mapCategoryFromDb(data);
+      return data;
     } catch (error: any) {
       console.error("Error updating category in Supabase:", error);
       toast.error(`Update Error: ${error.message || 'Unknown error'}`);
@@ -355,7 +279,6 @@ export const dataService = {
     const uploadUrl = '/api/upload';
     
     console.log(`[DATA SERVICE] Starting image upload: ${file.name}`);
-    console.log(`[DATA SERVICE] Target Path: ${uploadUrl}`);
     
     // Add a controller to handle timeouts
     const controller = new AbortController();
@@ -365,7 +288,6 @@ export const dataService = {
       const formData = new FormData();
       formData.append('file', file);
 
-      // Use relative URL for maximum compatibility
       const response = await fetch(uploadUrl, {
         method: 'POST',
         body: formData,
@@ -416,7 +338,7 @@ export const dataService = {
         .order('id', { ascending: false });
       
       if (error) throw error;
-      return data.map(mapOrderFromDb);
+      return data || [];
     } catch (error) {
       console.error("Error fetching orders from Supabase:", error);
       return [];
@@ -449,7 +371,7 @@ export const dataService = {
         .order('id', { ascending: false });
       
       if (error) throw error;
-      return data.map(mapUserFromDb);
+      return data || [];
     } catch (error) {
       console.error("Error fetching users from Supabase:", error);
       return [];

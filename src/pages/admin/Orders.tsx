@@ -59,8 +59,8 @@ const AdminOrders: React.FC = () => {
 
   const filteredOrders = orders.filter(order => {
     const matchesSearch = 
-      order.orderNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      order.shippingAddress.fullName.toLowerCase().includes(searchTerm.toLowerCase());
+      order.order_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      order.shipping_address.fullName.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = statusFilter === 'all' || order.status === statusFilter;
     return matchesSearch && matchesStatus;
   });
@@ -148,20 +148,20 @@ const AdminOrders: React.FC = () => {
                 >
                   <td className="px-6 py-4">
                     <div className="flex flex-col">
-                      <span className="font-bold text-zinc-900 tracking-tight">#{order.orderNumber}</span>
+                      <span className="font-bold text-zinc-900 tracking-tight">#{order.order_number}</span>
                       <span className="text-[10px] text-zinc-400 font-medium">
-                        {order.createdAt ? (
-                          typeof order.createdAt === 'string' 
-                            ? new Date(order.createdAt).toLocaleDateString()
-                            : new Date(order.createdAt?.seconds * 1000 || order.createdAt).toLocaleDateString()
+                        {order.created_at ? (
+                          typeof order.created_at === 'string' 
+                            ? new Date(order.created_at).toLocaleDateString()
+                            : new Date(order.created_at?.seconds * 1000 || order.created_at).toLocaleDateString()
                         ) : new Date().toLocaleDateString()}
                       </span>
                     </div>
                   </td>
                   <td className="px-6 py-4">
                     <div className="flex flex-col">
-                      <span className="font-semibold text-zinc-800 leading-none">{order.shippingAddress.fullName}</span>
-                      <span className="text-xs text-zinc-500 mt-1">{order.shippingAddress.city}, {order.shippingAddress.state}</span>
+                      <span className="font-semibold text-zinc-800 leading-none">{order.shipping_address.fullName}</span>
+                      <span className="text-xs text-zinc-500 mt-1">{order.shipping_address.city}, {order.shipping_address.state}</span>
                     </div>
                   </td>
                   <td className="px-6 py-4">
@@ -171,7 +171,7 @@ const AdminOrders: React.FC = () => {
                     </Badge>
                   </td>
                   <td className="px-6 py-4 font-bold text-zinc-900">
-                    ₹{order.grandTotal.toLocaleString()}
+                    ₹{order.grand_total.toLocaleString()}
                   </td>
                   <td className="px-6 py-4 text-right">
                     <Button variant="ghost" size="icon" className="rounded-xl">
@@ -215,7 +215,7 @@ const AdminOrders: React.FC = () => {
                 <div className="flex items-center justify-between border-b border-zinc-100 pb-6">
                   <div>
                     <h2 className="text-2xl font-black tracking-tighter">Order Detail</h2>
-                    <p className="text-xs text-zinc-400 font-bold uppercase tracking-widest mt-1">ID: {selectedOrder.orderNumber}</p>
+                    <p className="text-xs text-zinc-400 font-bold uppercase tracking-widest mt-1">ID: {selectedOrder.order_number}</p>
                   </div>
                   <Button variant="ghost" size="icon" onClick={() => setSelectedOrder(null)} className="rounded-xl">
                     <MoreVertical className="w-5 h-5 text-zinc-400" />
@@ -244,10 +244,10 @@ const AdminOrders: React.FC = () => {
                     </div>
 
                     <div>
-                      <h3 className="text-[10px] font-black uppercase tracking-widest text-zinc-400 mb-2">Customer</h3>
+                      <h3 className="text-[10px) font-black uppercase tracking-widest text-zinc-400 mb-2">Customer</h3>
                       <div className="p-4 bg-zinc-50 rounded-2xl space-y-1">
-                        <p className="font-bold text-zinc-900 leading-tight">{selectedOrder.shippingAddress.fullName}</p>
-                        <p className="text-xs text-zinc-500">{selectedOrder.shippingAddress.phone}</p>
+                        <p className="font-bold text-zinc-900 leading-tight">{selectedOrder.shipping_address.fullName}</p>
+                        <p className="text-xs text-zinc-500">{selectedOrder.shipping_address.phone}</p>
                       </div>
                     </div>
                   </div>
@@ -256,11 +256,11 @@ const AdminOrders: React.FC = () => {
                     <div>
                       <h3 className="text-[10px] font-black uppercase tracking-widest text-zinc-400 mb-2">Payment</h3>
                       <div className="p-4 bg-zinc-50 rounded-2xl">
-                        <p className="text-xs font-bold uppercase text-zinc-500 mb-1">{selectedOrder.paymentMethod}</p>
+                        <p className="text-xs font-bold uppercase text-zinc-500 mb-1">{selectedOrder.payment_method}</p>
                         <Badge className={`px-2 py-0.5 rounded-full text-[8px] uppercase tracking-tighter ${
-                          selectedOrder.paymentStatus === 'paid' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+                          selectedOrder.payment_status === 'paid' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
                         }`}>
-                          {selectedOrder.paymentStatus}
+                          {selectedOrder.payment_status}
                         </Badge>
                       </div>
                     </div>
@@ -268,9 +268,9 @@ const AdminOrders: React.FC = () => {
                     <div>
                       <h3 className="text-[10px] font-black uppercase tracking-widest text-zinc-400 mb-2">Shipping</h3>
                       <div className="p-4 bg-zinc-50 rounded-2xl text-[10px] text-zinc-500 space-y-1">
-                        <p>{selectedOrder.shippingAddress.addressLine1}</p>
-                        <p>{selectedOrder.shippingAddress.addressLine2}</p>
-                        <p className="font-bold text-zinc-900 uppercase">{selectedOrder.shippingAddress.city}, {selectedOrder.shippingAddress.state} - {selectedOrder.shippingAddress.pincode}</p>
+                        <p>{selectedOrder.shipping_address.addressLine1}</p>
+                        <p>{selectedOrder.shipping_address.addressLine2}</p>
+                        <p className="font-bold text-zinc-900 uppercase">{selectedOrder.shipping_address.city}, {selectedOrder.shipping_address.state} - {selectedOrder.shipping_address.pincode}</p>
                       </div>
                     </div>
                   </div>
@@ -301,18 +301,18 @@ const AdminOrders: React.FC = () => {
                       <span>₹{selectedOrder.total.toLocaleString()}</span>
                     </div>
                     <div className="flex justify-between text-xs text-zinc-400 font-medium">
-                      <span>GST ({(selectedOrder.gstAmount / selectedOrder.total * 100).toFixed(0)}%)</span>
-                      <span>₹{selectedOrder.gstAmount.toLocaleString()}</span>
+                      <span>GST ({(selectedOrder.gst_amount / selectedOrder.total * 100).toFixed(0)}%)</span>
+                      <span>₹{selectedOrder.gst_amount.toLocaleString()}</span>
                     </div>
                     <div className="flex justify-between text-xs text-zinc-400 font-medium">
                       <span>Shipping</span>
-                      <span>₹{selectedOrder.shippingCharge.toLocaleString()}</span>
+                      <span>₹{selectedOrder.shipping_charge.toLocaleString()}</span>
                     </div>
                   </div>
                   <div className="pt-4 border-t border-white/10 flex justify-between items-end">
                     <div>
                       <p className="text-[8px] font-black uppercase tracking-[0.2em] text-zinc-500 mb-1">Total Amount Paid</p>
-                      <p className="text-4xl font-black tracking-tighter">₹{selectedOrder.grandTotal.toLocaleString()}</p>
+                      <p className="text-4xl font-black tracking-tighter">₹{selectedOrder.grand_total.toLocaleString()}</p>
                     </div>
                     <Button variant="accent" size="sm" className="rounded-xl h-10 px-6">
                       <FileText className="w-4 h-4 mr-2" />

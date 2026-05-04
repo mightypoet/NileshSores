@@ -3,8 +3,8 @@ export interface Category {
   name: string;
   slug: string;
   image?: string;
-  parentId?: string;
-  sortOrder?: number;
+  parent_id?: string;
+  sort_order?: number;
 }
 
 export interface Product {
@@ -16,22 +16,22 @@ export interface Product {
   mrp: number;
   discount?: number;
   rating?: number;
-  reviewsCount?: number;
-  gstRate: number;
+  reviews_count?: number;
+  gst_rate: number;
   sku: string;
   stock: number;
   images: string[];
-  categoryId: string;
+  category_id: string;
   status: 'active' | 'draft' | 'archived';
-  isBestSeller?: boolean;
+  is_best_seller?: boolean;
   collection?: string;
-  createdAt: any;
-  updatedAt: any;
+  created_at: any;
+  updated_at: any;
 }
 
 export interface OrderItem {
   id: string;
-  productId: string;
+  product_id: string;
   name: string;
   price: number;
   quantity: number;
@@ -40,16 +40,16 @@ export interface OrderItem {
 
 export interface Order {
   id: string;
-  orderNumber: string;
-  userId: string;
+  order_number: string;
+  user_id: string;
   status: 'pending' | 'processing' | 'shipped' | 'delivered' | 'cancelled';
   total: number;
-  gstAmount: number;
-  shippingCharge: number;
-  grandTotal: number;
-  paymentStatus: 'pending' | 'paid' | 'failed' | 'refunded';
-  paymentMethod: 'cod' | 'upi' | 'card';
-  shippingAddress: {
+  gst_amount: number;
+  shipping_charge: number;
+  grand_total: number;
+  payment_status: 'pending' | 'paid' | 'failed' | 'refunded';
+  payment_method: 'cod' | 'upi' | 'card';
+  shipping_address: {
     fullName: string;
     addressLine1: string;
     addressLine2?: string;
@@ -59,7 +59,7 @@ export interface Order {
     phone: string;
   };
   items: OrderItem[];
-  createdAt: any;
+  created_at: any;
 }
 
 export interface UserProfile {
@@ -68,7 +68,7 @@ export interface UserProfile {
   email: string;
   phone?: string;
   role: 'customer' | 'admin';
-  createdAt: any;
+  created_at: any;
 }
 
 export interface Banner {

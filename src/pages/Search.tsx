@@ -104,7 +104,7 @@ const Search = () => {
                     <div className="absolute top-4 left-4">
                       {product.stock <= 0 ? (
                         <span className="px-4 py-2 bg-red-600 text-white text-[10px] font-black rounded-xl uppercase tracking-widest shadow-lg">Sold Out</span>
-                      ) : product.isBestSeller && (
+                      ) : product.is_best_seller && (
                         <span className="px-4 py-2 bg-indigo-600 text-white text-[10px] font-black rounded-xl uppercase tracking-widest shadow-lg">Best Seller</span>
                       )}
                     </div>
@@ -114,7 +114,7 @@ const Search = () => {
                       <h3 className="text-sm font-black text-zinc-900 group-hover:text-indigo-600 transition-colors uppercase tracking-tight line-clamp-1">{product.name}</h3>
                       <span className="text-sm font-black text-indigo-600">₹{product.price}</span>
                     </div>
-                    <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">{product.categoryId}</p>
+                    <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">{product.category_id}</p>
                   </div>
                 </motion.div>
               ))}

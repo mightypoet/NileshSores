@@ -30,7 +30,7 @@ export default function ProductDetail() {
         if (prod) {
           const allProducts = await dataService.getProducts();
           const related = allProducts
-            .filter(p => p.categoryId === prod.categoryId && p.id !== prod.id)
+            .filter(p => p.category_id === prod.category_id && p.id !== prod.id)
             .slice(0, 4);
           setRelatedProducts(related);
         }
@@ -85,7 +85,7 @@ export default function ProductDetail() {
             <ArrowLeft className="h-4 w-4 mr-2" /> Back
           </Button>
           <div className="h-px w-12 bg-zinc-100" />
-          <span className="text-[10px] font-black uppercase tracking-widest text-primary">{product.categoryId.replace('-', ' ')}</span>
+          <span className="text-[10px] font-black uppercase tracking-widest text-primary">{product.category_id.replace('-', ' ')}</span>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 sm:gap-20">
@@ -139,7 +139,7 @@ export default function ProductDetail() {
                     <Star key={i} className={`h-4 w-4 ${i < Math.floor(product.rating || 0) ? 'fill-current' : ''}`} />
                   ))}
                 </div>
-                <span className="text-xs font-black uppercase tracking-widest text-zinc-400">{product.reviewsCount} REVIEWS</span>
+                <span className="text-xs font-black uppercase tracking-widest text-zinc-400">{product.reviews_count} REVIEWS</span>
               </div>
             </div>
 
