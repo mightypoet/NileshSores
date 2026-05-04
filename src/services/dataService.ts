@@ -352,7 +352,8 @@ export const dataService = {
 
   // UPLOADS (Vercel Blob via Proxy)
   async uploadImage(file: File, _bucket: string): Promise<string | null> {
-    console.log(`Starting image upload: ${file.name} (${(file.size / 1024).toFixed(1)} KB)`);
+    const uploadUrl = '/api/upload';
+    console.log(`Starting image upload: ${file.name} to ${uploadUrl} (${(file.size / 1024).toFixed(1)} KB)`);
     
     // Add a controller to handle timeouts
     const controller = new AbortController();
@@ -362,8 +363,8 @@ export const dataService = {
       const formData = new FormData();
       formData.append('file', file);
 
-      console.log(`Sending upload request to: /api/upload`);
-      const response = await fetch('/api/upload', {
+      console.log(`Sending POST request to: ${window.location.origin}${uploadUrl}`);
+      const response = await fetch(uploadUrl, {
         method: 'POST',
         body: formData,
         signal: controller.signal

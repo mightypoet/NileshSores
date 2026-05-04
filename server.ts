@@ -22,20 +22,23 @@ async function startServer() {
   const PORT = 3000;
 
   // Middleware
-  app.use(cors());
+  app.use(cors({
+    origin: "*",
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"]
+  }));
   app.use(express.json());
   app.use(express.urlencoded({ extended: true }));
 
   // Request Logging
   app.use((req, res, next) => {
-    console.log(`[${new Date().toISOString()}] ${req.method} ${req.path}`);
+    console.log(`[${new Date().toISOString()}] ${req.method} ${req.url} (Path: ${req.path})`);
     next();
   });
 
-  // API Routes
-  const apiRouter = express.Router();
-
-  apiRouter.get("/health", (req, res) => {
+  // API Routes - Define them directly on the app instance for maximum clarity
+  app.get("/api/health", (req, res) => {
+    console.log("Health check hit");
     res.json({ 
       status: "ok", 
       timestamp: new Date().toISOString(),
@@ -46,22 +49,28 @@ async function startServer() {
     });
   });
 
-  // Simplified upload route
-  apiRouter.post("/upload", upload.single("file"), async (req: any, res) => {
-    console.log("POST /api/upload reached");
+  // Simplified upload route directly on app
+  app.get("/api/upload", (req, res) => {
+    res.json({ message: "Upload endpoint exists. Please use POST to upload files." });
+  });
+
+  app.post("/api/upload", upload.single("file"), async (req: any, res) => {
+    console.log(`POST /api/upload reached - File: ${req.file?.originalname}`);
     try {
       if (!req.file) {
+        console.error("No file in request");
         return res.status(400).json({ error: "No file uploaded" });
       }
 
       const token = process.env.BLOB_READ_WRITE_TOKEN;
       if (!token) {
         console.error("Missing BLOB_READ_WRITE_TOKEN");
-        return res.status(500).json({ error: "Server configuration error" });
+        return res.status(500).json({ error: "Server configuration error: Token missing" });
       }
 
       const filename = `products/${Date.now()}-${req.file.originalname.replace(/[^a-zA-Z0-9.]/g, '-')}`;
       
+      console.log(`Uploading ${filename} to Vercel Blob...`);
       const blob = await put(filename, req.file.buffer, {
         access: "public",
         token: token,
@@ -70,12 +79,16 @@ async function startServer() {
       console.log("Upload success:", blob.url);
       res.json({ url: blob.url });
     } catch (error: any) {
-      console.error("Upload error:", error);
+      console.error("Upload handler exception:", error);
       res.status(500).json({ error: error.message });
     }
   });
 
-  app.use("/api", apiRouter);
+  // Explicitly handle 404 for any other /api routes to prevent falling through to Vite
+  app.all("/api/*", (req, res) => {
+    console.log(`Unmatched API route: ${req.method} ${req.url}`);
+    res.status(404).json({ error: "API route not found" });
+  });
 
   // Vite middleware for development
   if (process.env.NODE_ENV !== "production") {
