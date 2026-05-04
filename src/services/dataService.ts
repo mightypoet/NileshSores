@@ -3,7 +3,120 @@ import { Product, Category, Banner, Order, UserProfile } from '../types';
 import { products as mockProducts, categories as mockCategories } from '../data/mockData';
 import { toast } from 'sonner';
 
+// Helper to map DB snake_case to UI camelCase
+const mapProductFromDb = (p: any): Product => ({
+  ...p,
+  reviewsCount: p.reviews_count,
+  gstRate: p.gst_rate,
+  categoryId: p.category_id,
+  isBestSeller: p.is_best_seller,
+  createdAt: p.created_at,
+  updatedAt: p.updated_at,
+  categoryName: p.categories?.name
+});
+
+// Helper to map UI camelCase to DB snake_case
+const mapProductToDb = (p: any): any => {
+  const { 
+    reviewsCount, 
+    gstRate, 
+    categoryId, 
+    isBestSeller, 
+    createdAt, 
+    updatedAt, 
+    categoryName,
+    ...rest 
+  } = p;
+  
+  const mapped: any = { ...rest };
+  if (reviewsCount !== undefined) mapped.reviews_count = reviewsCount;
+  if (gstRate !== undefined) mapped.gst_rate = gstRate;
+  if (categoryId !== undefined) mapped.category_id = categoryId;
+  if (isBestSeller !== undefined) mapped.is_best_seller = isBestSeller;
+  if (createdAt !== undefined) mapped.created_at = createdAt;
+  if (updatedAt !== undefined) mapped.updated_at = updatedAt;
+  
+  return mapped;
+};
+
+const mapCategoryFromDb = (c: any): Category => ({
+  ...c,
+  parentId: c.parent_id,
+  sortOrder: c.sort_order
+});
+
+const mapCategoryToDb = (c: any): any => {
+  const { parentId, sortOrder, ...rest } = c;
+  const mapped: any = { ...rest };
+  if (parentId !== undefined) mapped.parent_id = parentId;
+  if (sortOrder !== undefined) mapped.sort_order = sortOrder;
+  return mapped;
+};
+
+const mapOrderFromDb = (o: any): Order => ({
+  ...o,
+  orderNumber: o.order_number,
+  userId: o.user_id,
+  gstAmount: o.gst_amount,
+  shippingCharge: o.shipping_charge,
+  grandTotal: o.grand_total,
+  paymentStatus: o.payment_status,
+  paymentMethod: o.payment_method,
+  shippingAddress: o.shipping_address,
+  createdAt: o.created_at
+});
+
+const mapUserFromDb = (u: any): UserProfile => ({
+  ...u,
+  createdAt: u.created_at
+});
+
+const mapOrderToDb = (o: any): any => {
+  const { 
+    orderNumber, 
+    userId, 
+    gstAmount, 
+    shippingCharge, 
+    grandTotal, 
+    paymentStatus, 
+    paymentMethod, 
+    shippingAddress,
+    createdAt,
+    ...rest 
+  } = o;
+  
+  const mapped: any = { ...rest };
+  if (orderNumber !== undefined) mapped.order_number = orderNumber;
+  if (userId !== undefined) mapped.user_id = userId;
+  if (gstAmount !== undefined) mapped.gst_amount = gstAmount;
+  if (shippingCharge !== undefined) mapped.shipping_charge = shippingCharge;
+  if (grandTotal !== undefined) mapped.grand_total = grandTotal;
+  if (paymentStatus !== undefined) mapped.payment_status = paymentStatus;
+  if (paymentMethod !== undefined) mapped.payment_method = paymentMethod;
+  if (shippingAddress !== undefined) mapped.shipping_address = shippingAddress;
+  if (createdAt !== undefined) mapped.created_at = createdAt;
+  
+  return mapped;
+};
+
 export const dataService = {
+  async createOrder(order: Partial<Order>): Promise<Order | null> {
+    if (!supabase) return null;
+    try {
+      const payload = mapOrderToDb(order);
+      const { data, error } = await supabase
+        .from('orders')
+        .insert([payload])
+        .select()
+        .single();
+      
+      if (error) throw error;
+      return mapOrderFromDb(data);
+    } catch (error) {
+      console.error("Error creating order in Supabase:", error);
+      return null;
+    }
+  },
   // PRODUCTS
   async getProducts(): Promise<Product[]> {
     if (!supabase) return mockProducts as any;
@@ -21,7 +134,11 @@ export const dataService = {
       
       if (error) throw error;
       
-      return data || [];
+      if (data && data.length > 0) {
+        console.log("[DATA SERVICE] Raw product data snippet:", Object.keys(data[0]));
+        return data.map(mapProductFromDb);
+      }
+      return [];
     } catch (error) {
       console.error("Error fetching products from Supabase:", error);
       return mockProducts as any;
@@ -51,7 +168,7 @@ export const dataService = {
         throw error;
       }
       
-      return data;
+      return data ? mapProductFromDb(data) : null;
     } catch (error) {
       console.error("Error fetching product by slug from Supabase:", error);
       const mockProduct = mockProducts.find(p => p.slug === slug);
@@ -62,7 +179,10 @@ export const dataService = {
   async createProduct(product: Partial<Product>): Promise<Product | null> {
     if (!supabase) return null;
     try {
-      const { id, ...payload } = product as any;
+      const { id, categories, categoryName, ...rest } = product as any;
+      const payload = mapProductToDb(rest);
+      
+      console.log("[DATA SERVICE] Creating product with payload:", payload);
       
       const { data, error } = await supabase
         .from('products')
@@ -74,7 +194,7 @@ export const dataService = {
         console.error("Supabase Error [createProduct]:", error.message, error.details, error.hint);
         throw error;
       }
-      return data;
+      return mapProductFromDb(data);
     } catch (error: any) {
       console.error("Error creating product in Supabase:", error);
       toast.error(`Create Error: ${error.message || 'Unknown error'}`);
@@ -85,7 +205,13 @@ export const dataService = {
   async updateProduct(id: string, updates: Partial<Product>): Promise<Product | null> {
     if (!supabase) return null;
     try {
-      const { id: _, created_at: __, categories: ___, ...payload } = updates as any;
+      const { id: _, created_at: __, categories: ___, categoryName: ____, ...rest } = updates as any;
+      const payload = mapProductToDb(rest);
+      // Ensure we don't try to update fields that shouldn't be updated
+      delete payload.created_at;
+      delete payload.id;
+      
+      console.log("[DATA SERVICE] Updating product with payload:", payload);
       
       const { data, error } = await supabase
         .from('products')
@@ -98,7 +224,7 @@ export const dataService = {
         console.error("Supabase Error [updateProduct]:", error.message, error.details, error.hint);
         throw error;
       }
-      return data;
+      return mapProductFromDb(data);
     } catch (error: any) {
       console.error("Error updating product in Supabase:", error);
       toast.error(`Update Error: ${error.message || 'Unknown error'}`);
@@ -136,7 +262,8 @@ export const dataService = {
         .order('name');
       
       if (error) throw error;
-      return data || [];
+      if (data) return data.map(mapCategoryFromDb);
+      return [];
     } catch (error) {
       console.error("Error fetching categories from Supabase:", error);
       return mockCategories as any;
@@ -146,7 +273,8 @@ export const dataService = {
   async createCategory(category: Partial<Category>): Promise<Category | null> {
     if (!supabase) return null;
     try {
-      const { id, ...payload } = category as any;
+      const { id, ...rest } = category as any;
+      const payload = mapCategoryToDb(rest);
       
       const { data, error } = await supabase
         .from('categories')
@@ -158,7 +286,7 @@ export const dataService = {
         console.error("Supabase Error [createCategory]:", error.message, error.details, error.hint);
         throw error;
       }
-      return data;
+      return mapCategoryFromDb(data);
     } catch (error: any) {
       console.error("Error creating category in Supabase:", error);
       toast.error(`Create Error: ${error.message || 'Unknown error'}`);
@@ -169,7 +297,8 @@ export const dataService = {
   async updateCategory(id: string, updates: Partial<Category>): Promise<Category | null> {
     if (!supabase) return null;
     try {
-      const { id: _, ...payload } = updates as any;
+      const { id: _, ...rest } = updates as any;
+      const payload = mapCategoryToDb(rest);
       
       const { data, error } = await supabase
         .from('categories')
@@ -182,7 +311,7 @@ export const dataService = {
         console.error("Supabase Error [updateCategory]:", error.message, error.details, error.hint);
         throw error;
       }
-      return data;
+      return mapCategoryFromDb(data);
     } catch (error: any) {
       console.error("Error updating category in Supabase:", error);
       toast.error(`Update Error: ${error.message || 'Unknown error'}`);
@@ -276,9 +405,12 @@ export const dataService = {
 
   // UPLOADS (Vercel Blob via Proxy)
   async uploadImage(file: File, _bucket: string): Promise<string | null> {
-    const uploadUrl = '/api/upload';
+    // Determine the absolute URL if possible to avoid issues with relative paths in different contexts
+    const uploadUrl = window.location.origin.includes('localhost') || window.location.origin.includes('run.app')
+      ? '/api/upload'
+      : `${window.location.origin}/api/upload`;
     
-    console.log(`[DATA SERVICE] Starting image upload: ${file.name}`);
+    console.log(`[DATA SERVICE] Starting image upload: ${file.name} to ${uploadUrl}`);
     
     // Add a controller to handle timeouts
     const controller = new AbortController();
@@ -338,7 +470,8 @@ export const dataService = {
         .order('id', { ascending: false });
       
       if (error) throw error;
-      return data || [];
+      if (data) return data.map(mapOrderFromDb);
+      return [];
     } catch (error) {
       console.error("Error fetching orders from Supabase:", error);
       return [];
@@ -371,7 +504,8 @@ export const dataService = {
         .order('id', { ascending: false });
       
       if (error) throw error;
-      return data || [];
+      if (data) return data.map(mapUserFromDb);
+      return [];
     } catch (error) {
       console.error("Error fetching users from Supabase:", error);
       return [];

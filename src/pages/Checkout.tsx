@@ -2,29 +2,78 @@ import React, { useState } from 'react';
 import { useCart } from '../hooks/useCart';
 import { useNavigate, Link } from 'react-router-dom';
 import { motion } from 'motion/react';
-import { ShieldCheck, Truck, CreditCard, ChevronRight, CheckCircle2, ArrowLeft, MapPin, Phone, Mail, User } from 'lucide-react';
+import { ShieldCheck, Truck, CreditCard, ChevronRight, CheckCircle2, ArrowLeft, MapPin, Phone, User } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
+import { dataService } from '../services/dataService';
+import { useAuth } from '../hooks/useAuth';
 
 export default function Checkout() {
-  const { items, subtotal, clearCart, totalItems } = useCart();
+  const { items, subtotal, clearCart } = useCart();
+  const { user } = useAuth();
   const navigate = useNavigate();
   const [isProcessing, setIsProcessing] = useState(false);
   const [orderComplete, setOrderComplete] = useState(false);
+  const [orderRef, setOrderRef] = useState('');
+
+  const [formData, setFormData] = useState({
+    fullName: '',
+    phone: '',
+    addressLine1: '',
+    city: '',
+    pincode: '',
+    state: 'Gujarat' // Default
+  });
 
   const shipping = subtotal > 1000 ? 0 : 50;
-  const grandTotal = subtotal + shipping;
+  const gstAmount = Math.round(subtotal * 0.18);
+  const grandTotal = subtotal + shipping + gstAmount;
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsProcessing(true);
-    // Simulate API call
-    setTimeout(() => {
+
+    try {
+      const orderNumber = `NS-${Math.floor(100000 + Math.random() * 900000)}`;
+      
+      const orderData = {
+        orderNumber,
+        userId: user?.id || 'anonymous',
+        total: subtotal,
+        gstAmount,
+        shippingCharge: shipping,
+        grandTotal,
+        status: 'pending' as const,
+        paymentStatus: 'pending' as const,
+        paymentMethod: 'cod' as const,
+        shippingAddress: {
+          ...formData,
+        },
+        items: items.map(item => ({
+          productId: item.productId,
+          name: item.name,
+          price: item.price,
+          quantity: item.quantity,
+          image: item.image
+        }))
+      };
+
+      const result = await dataService.createOrder(orderData as any);
+      
+      if (result) {
+        setOrderRef(orderNumber);
+        setOrderComplete(true);
+        clearCart();
+        toast.success('Your creative journey has begun! Order placed successfully.');
+      } else {
+        toast.error('Failed to place order. Please try again.');
+      }
+    } catch (error) {
+      console.error('Checkout error:', error);
+      toast.error('An unexpected error occurred.');
+    } finally {
       setIsProcessing(false);
-      setOrderComplete(true);
-      clearCart();
-      toast.success('Your creative journey has begun! Order placed successfully.');
-    }, 2500);
+    }
   };
 
   if (orderComplete) {
@@ -44,7 +93,7 @@ export default function Checkout() {
           </div>
           <div className="p-8 bg-zinc-50 rounded-[2.5rem] border border-zinc-100 flex flex-col items-center gap-4">
             <p className="text-xs font-black uppercase tracking-widest text-zinc-400">Order Reference</p>
-            <p className="text-2xl font-black tracking-tight">#NS-{Math.floor(100000 + Math.random() * 900000)}</p>
+            <p className="text-2xl font-black tracking-tight">{orderRef}</p>
             <p className="text-[10px] font-bold text-zinc-400">A confirmation email has been sent to your inbox.</p>
           </div>
           <Link to="/" className="block">
@@ -92,27 +141,62 @@ export default function Checkout() {
                   <label className="text-[10px] font-black uppercase tracking-widest text-zinc-400 px-1">Full Name</label>
                   <div className="relative">
                     <User className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-300" />
-                    <input required type="text" className="w-full h-14 pl-12 pr-4 bg-zinc-50 border-none rounded-2xl text-sm focus:ring-1 focus:ring-primary outline-none" placeholder="Rohan Sharma" />
+                    <input 
+                      required 
+                      type="text" 
+                      className="w-full h-14 pl-12 pr-4 bg-zinc-50 border-none rounded-2xl text-sm focus:ring-1 focus:ring-primary outline-none" 
+                      placeholder="Rohan Sharma" 
+                      value={formData.fullName}
+                      onChange={(e) => setFormData({...formData, fullName: e.target.value})}
+                    />
                   </div>
                 </div>
                 <div className="space-y-2">
                   <label className="text-[10px] font-black uppercase tracking-widest text-zinc-400 px-1">Phone Number</label>
                   <div className="relative">
                     <Phone className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-300" />
-                    <input required type="tel" className="w-full h-14 pl-12 pr-4 bg-zinc-50 border-none rounded-2xl text-sm focus:ring-1 focus:ring-primary outline-none" placeholder="+91 98765 43210" />
+                    <input 
+                      required 
+                      type="tel" 
+                      className="w-full h-14 pl-12 pr-4 bg-zinc-50 border-none rounded-2xl text-sm focus:ring-1 focus:ring-primary outline-none" 
+                      placeholder="+91 98765 43210" 
+                      value={formData.phone}
+                      onChange={(e) => setFormData({...formData, phone: e.target.value})}
+                    />
                   </div>
                 </div>
                 <div className="md:col-span-2 space-y-2">
                   <label className="text-[10px] font-black uppercase tracking-widest text-zinc-400 px-1">Street Address</label>
-                  <input required type="text" className="w-full h-14 px-4 bg-zinc-50 border-none rounded-2xl text-sm focus:ring-1 focus:ring-primary outline-none" placeholder="Nr. Siddhi Vinayak Temple, Dandia Bazaar" />
+                  <input 
+                    required 
+                    type="text" 
+                    className="w-full h-14 px-4 bg-zinc-50 border-none rounded-2xl text-sm focus:ring-1 focus:ring-primary outline-none" 
+                    placeholder="Nr. Siddhi Vinayak Temple, Dandia Bazaar" 
+                    value={formData.addressLine1}
+                    onChange={(e) => setFormData({...formData, addressLine1: e.target.value})}
+                  />
                 </div>
                 <div className="space-y-2">
                   <label className="text-[10px] font-black uppercase tracking-widest text-zinc-400 px-1">City</label>
-                  <input required type="text" className="w-full h-14 px-4 bg-zinc-50 border-none rounded-2xl text-sm focus:ring-1 focus:ring-primary outline-none" placeholder="Vadodara" />
+                  <input 
+                    required 
+                    type="text" 
+                    className="w-full h-14 px-4 bg-zinc-50 border-none rounded-2xl text-sm focus:ring-1 focus:ring-primary outline-none" 
+                    placeholder="Vadodara" 
+                    value={formData.city}
+                    onChange={(e) => setFormData({...formData, city: e.target.value})}
+                  />
                 </div>
                 <div className="space-y-2">
                   <label className="text-[10px] font-black uppercase tracking-widest text-zinc-400 px-1">Pincode</label>
-                  <input required type="text" className="w-full h-14 px-4 bg-zinc-50 border-none rounded-2xl text-sm focus:ring-1 focus:ring-primary outline-none" placeholder="390001" />
+                  <input 
+                    required 
+                    type="text" 
+                    className="w-full h-14 px-4 bg-zinc-50 border-none rounded-2xl text-sm focus:ring-1 focus:ring-primary outline-none" 
+                    placeholder="390001" 
+                    value={formData.pincode}
+                    onChange={(e) => setFormData({...formData, pincode: e.target.value})}
+                  />
                 </div>
               </div>
             </section>
@@ -169,6 +253,10 @@ export default function Checkout() {
                 <div className="flex justify-between text-xs font-black uppercase tracking-widest text-zinc-500">
                   <span>Subtotal</span>
                   <span className="text-white">₹{subtotal}</span>
+                </div>
+                <div className="flex justify-between text-xs font-black uppercase tracking-widest text-zinc-500">
+                  <span>GST (18%)</span>
+                  <span className="text-white">₹{gstAmount}</span>
                 </div>
                 <div className="flex justify-between text-xs font-black uppercase tracking-widest text-zinc-500">
                   <span>Shipping</span>

@@ -35,11 +35,11 @@ const AdminProducts: React.FC = () => {
     mrp: 0,
     stock: 0,
     sku: '',
-    gst_rate: 18,
-    category_id: '',
+    gstRate: 18,
+    categoryId: '',
     status: 'active',
     images: [],
-    is_best_seller: false,
+    isBestSeller: false,
     collection: ''
   });
   const [uploadingImage, setUploadingImage] = useState(false);
@@ -97,11 +97,11 @@ const AdminProducts: React.FC = () => {
       mrp: 0,
       stock: 0,
       sku: `PROD-${Math.random().toString(36).substring(2, 7).toUpperCase()}`,
-      gst_rate: 18,
-      category_id: categories.length > 0 ? categories[0].id : '',
+      gstRate: 18,
+      categoryId: categories.length > 0 ? categories[0].id : '',
       status: 'active',
       images: [],
-      is_best_seller: false,
+      isBestSeller: false,
       collection: ''
     });
     setIsModalOpen(true);
@@ -140,7 +140,7 @@ const AdminProducts: React.FC = () => {
     e.preventDefault();
     
     // Validation
-    if (!formData.name || !formData.category_id) {
+    if (!formData.name || !formData.categoryId) {
       toast.error('Please fill in all required fields');
       return;
     }
@@ -419,8 +419,8 @@ const AdminProducts: React.FC = () => {
                     <label className="text-sm font-bold text-zinc-700 uppercase tracking-wider">GST Rate (%)</label>
                     <select 
                       className="w-full px-4 py-2.5 border border-zinc-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
-                      value={formData.gst_rate}
-                      onChange={(e) => setFormData({...formData, gst_rate: Number(e.target.value)})}
+                      value={formData.gstRate}
+                      onChange={(e) => setFormData({...formData, gstRate: Number(e.target.value)})}
                     >
                       <option value={0}>0%</option>
                       <option value={5}>5%</option>
@@ -489,12 +489,12 @@ const AdminProducts: React.FC = () => {
                   <div className="flex items-center gap-2 pt-8">
                     <input 
                       type="checkbox" 
-                      id="is_best_seller"
+                      id="isBestSeller"
                       className="w-5 h-5 rounded border-zinc-300 text-indigo-600 focus:ring-indigo-500"
-                      checked={formData.is_best_seller}
-                      onChange={(e) => setFormData({...formData, is_best_seller: e.target.checked})}
+                      checked={formData.isBestSeller}
+                      onChange={(e) => setFormData({...formData, isBestSeller: e.target.checked})}
                     />
-                    <label htmlFor="is_best_seller" className="text-sm font-bold text-zinc-700 uppercase tracking-wider cursor-pointer">
+                    <label htmlFor="isBestSeller" className="text-sm font-bold text-zinc-700 uppercase tracking-wider cursor-pointer">
                       Best Seller Product
                     </label>
                   </div>
@@ -506,8 +506,8 @@ const AdminProducts: React.FC = () => {
                     <select 
                       required
                       className="w-full px-4 py-2.5 border border-zinc-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
-                      value={formData.category_id}
-                      onChange={(e) => setFormData({...formData, category_id: e.target.value})}
+                      value={formData.categoryId}
+                      onChange={(e) => setFormData({...formData, categoryId: e.target.value})}
                     >
                       {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                     </select>

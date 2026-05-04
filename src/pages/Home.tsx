@@ -48,7 +48,7 @@ export default function Home() {
     }
   }, [banners]);
 
-  const bestSellers = products.filter(p => p.is_best_seller).slice(0, 8);
+  const bestSellers = products.filter(p => p.isBestSeller).slice(0, 8);
   
   const featuredCollections = [
     { name: 'Inkredibles Series', image: 'https://cdn.shopify.com/s/files/1/0681/1510/3931/products/JumboNoteBookHardBound-1.jpg', desc: 'Creative tools for little hands' },
@@ -277,7 +277,7 @@ export default function Home() {
               </Link>
               <div className="px-4 pb-4 space-y-4">
                 <div className="flex items-center justify-between">
-                  <span className="text-[10px] font-black uppercase tracking-widest text-primary">{product.category_id.replace('-', ' ')}</span>
+                  <span className="text-[10px] font-black uppercase tracking-widest text-primary">{product.categoryId.replace('-', ' ')}</span>
                   <div className="flex items-center gap-1 text-accent">
                     <Star className="h-3 w-3 fill-current" />
                     <span className="text-[10px] font-black">{product.rating}</span>

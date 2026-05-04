@@ -45,11 +45,11 @@ export default function Products() {
     let result = [...products];
 
     if (selectedCategory) {
-      result = result.filter(p => p.category_id === selectedCategory);
+      result = result.filter(p => p.categoryId === selectedCategory);
     }
 
     if (filterType === 'best-seller') {
-      result = result.filter(p => p.is_best_seller);
+      result = result.filter(p => p.isBestSeller);
     }
 
     if (searchQuery) {
@@ -259,7 +259,7 @@ export default function Products() {
                   <div className={`p-8 space-y-6 ${viewMode === 'list' ? 'flex-1 flex flex-col justify-center' : ''}`}>
                     <div className="space-y-2">
                       <div className="flex items-center justify-between">
-                        <span className="text-[10px] font-black uppercase tracking-widest text-primary">{product.category_id.replace('-', ' ')}</span>
+                        <span className="text-[10px] font-black uppercase tracking-widest text-primary">{product.categoryId.replace('-', ' ')}</span>
                         <div className="flex items-center gap-1 text-accent">
                           <Star className="h-3 w-3 fill-current" />
                           <span className="text-[10px] font-black">{product.rating}</span>
