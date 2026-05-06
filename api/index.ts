@@ -1,6 +1,5 @@
 import "dotenv/config";
 import express from "express";
-import { createServer as createViteServer } from "vite";
 import path from "path";
 import { fileURLToPath } from "url";
 import multer from "multer";
@@ -10,34 +9,52 @@ import cors from "cors";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Initialize Supabase Admin Client
-const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+// Constants
+const PORT = 3000;
+const BUCKET_NAME = 'product-images';
 
-if (!supabaseUrl || !supabaseServiceKey) {
-  console.warn(">>> [SERVER] Warning: SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY is missing. Uploads will fail.");
+// Global clients (initialized lazily)
+let _supabaseAdmin: any = null;
+
+function getSupabaseAdmin() {
+  if (_supabaseAdmin) return _supabaseAdmin;
+  
+  const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+  if (!supabaseUrl || !supabaseServiceKey) {
+    console.warn(">>> [SERVER] SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY is missing.");
+    return null;
+  }
+
+  _supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false
+    }
+  });
+
+  return _supabaseAdmin;
 }
 
-const supabaseAdmin = (supabaseUrl && supabaseServiceKey) 
-  ? createClient(supabaseUrl, supabaseServiceKey, {
-      auth: {
-        autoRefreshToken: false,
-        persistSession: false
-      }
-    })
-  : null;
+// Ensure bucket exists (only runs once or on demand)
+let bucketChecked = false;
+async function ensureBucket() {
+  if (bucketChecked) return;
+  const admin = getSupabaseAdmin();
+  if (!admin) return;
 
-// Initial bucket setup attempt
-if (supabaseAdmin) {
-  supabaseAdmin.storage.createBucket('product-images', { public: true })
-    .then(({ data, error }) => {
-      if (error && error.message !== 'Bucket already exists') {
-        console.error(">>> [SERVER] Failed to ensure bucket 'product-images' exists:", error.message);
-      } else {
-        console.log(">>> [SERVER] Supabase bucket 'product-images' is ready.");
-      }
-    })
-    .catch(err => console.error(">>> [SERVER] Error checking bucket:", err));
+  try {
+    const { error } = await admin.storage.createBucket(BUCKET_NAME, { public: true });
+    if (error && error.message !== 'Bucket already exists') {
+      console.error(">>> [SERVER] Failed to ensure bucket:", error.message);
+    } else {
+      console.log(`>>> [SERVER] Supabase bucket '${BUCKET_NAME}' is ready.`);
+      bucketChecked = true;
+    }
+  } catch (err) {
+    console.error(">>> [SERVER] Error checking bucket:", err);
+  }
 }
 
 // Configure multer for memory storage
@@ -48,12 +65,10 @@ const upload = multer({
 });
 
 const app = express();
-const PORT = 3000;
 
-// ALWAYS FIRST: CORS
+// MIDDLEWARES
 app.use(cors());
 app.options("*", cors());
-
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -63,13 +78,14 @@ app.all("/api/*", (req, res, next) => {
   next();
 });
 
-// Define the upload handler function
+// UPLOAD HANDLER
 const handleUpload = async (req: any, res: any) => {
   const requestId = Math.random().toString(36).substring(7);
   console.log(`[${requestId}] >>> [SERVER] Incoming upload request: ${req.file ? req.file.originalname : 'No file'}`);
   
   try {
-    if (!supabaseAdmin) {
+    const admin = getSupabaseAdmin();
+    if (!admin) {
       console.error(`[${requestId}] >>> [SERVER] Upload failed: Supabase Admin client not initialized.`);
       return res.status(500).json({ 
         error: "Server configuration error: Supabase Service Role Key missing.",
@@ -81,17 +97,18 @@ const handleUpload = async (req: any, res: any) => {
       console.error(`[${requestId}] >>> [SERVER] Upload failed: No file found in request`);
       return res.status(400).json({ error: "No file uploaded. Make sure the field name is 'file'." });
     }
+
+    // Ensure bucket exists before upload (lazy)
+    await ensureBucket();
     
     const timestamp = Date.now();
     const safeName = req.file.originalname.replace(/[^a-zA-Z0-9.]/g, '-');
     const filePath = `${timestamp}-${safeName}`;
-    const bucketName = 'product-images';
     
-    console.log(`[${requestId}] >>> [SERVER] Uploading to Supabase bucket '${bucketName}': ${filePath} (${req.file.mimetype})`);
+    console.log(`[${requestId}] >>> [SERVER] Uploading to bucket '${BUCKET_NAME}': ${filePath}`);
     
-    // Upload to Supabase Storage
-    const { data: uploadData, error: uploadError } = await supabaseAdmin.storage
-      .from(bucketName)
+    const { data: uploadData, error: uploadError } = await admin.storage
+      .from(BUCKET_NAME)
       .upload(filePath, req.file.buffer, {
         contentType: req.file.mimetype,
         upsert: true
@@ -99,12 +116,11 @@ const handleUpload = async (req: any, res: any) => {
     
     if (uploadError) {
       console.error(`[${requestId}] >>> [SERVER] Supabase Storage Upload Error:`, uploadError);
-      return res.status(500).json({ error: `Storage Error: ${uploadError.message}. Ensure the bucket 'product-images' exists and is public.` });
+      return res.status(500).json({ error: `Storage Error: ${uploadError.message}.` });
     }
 
-    // Get Public URL
-    const { data: { publicUrl } } = supabaseAdmin.storage
-      .from(bucketName)
+    const { data: { publicUrl } } = admin.storage
+      .from(BUCKET_NAME)
       .getPublicUrl(filePath);
     
     console.log(`[${requestId}] >>> [SERVER] SUCCESS: ${publicUrl}`);
@@ -115,62 +131,51 @@ const handleUpload = async (req: any, res: any) => {
   }
 };
 
-// Main upload routes
+// API ROUTES
 app.post("/api/service/storage/upload", upload.single("file"), handleUpload);
 app.post("/api/upload", upload.single("file"), handleUpload);
-
-// Handle mismatched methods for upload
-app.all(["/api/upload", "/api/service/storage/upload"], (req, res) => {
-  res.status(405).json({ 
-    error: `Method ${req.method} not allowed. Please use POST.`,
-    tip: "If you see this from Vercel, check that your upload fetch call is using POST."
-  });
-});
 
 app.all("/api/health", (req, res) => {
   res.json({ 
     status: "ok", 
-    version: "2.1.2-vercel-fix",
+    version: "3.1.0-serverless-ready",
     time: new Date().toISOString(),
-    supabaseInitialized: !!supabaseAdmin
+    supabaseInitialized: !!getSupabaseAdmin()
   });
 });
 
-async function setupVite() {
+// STARTUP OR SERVERLESS EXPORT
+async function initialize() {
   if (process.env.NODE_ENV !== "production") {
-    console.log(">>> [SERVER] Initializing Vite in middleware mode...");
+    console.log(">>> [SERVER] Local environment detected - initializing Vite...");
+    const { createServer: createViteServer } = await import("vite");
     const vite = await createViteServer({
       server: { middlewareMode: true },
       appType: "spa",
       define: {
         'import.meta.env.VITE_SUPABASE_URL': JSON.stringify(process.env.VITE_SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL),
-        'import.meta.env.VITE_SUPABASE_ANON_KEY': JSON.stringify(process.env.VITE_SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_PUBLISHABLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY)
+        'import.meta.env.VITE_SUPABASE_ANON_KEY': JSON.stringify(process.env.VITE_SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY)
       }
     });
-    console.log(">>> [SERVER] Vite initialized successfully.");
     app.use(vite.middlewares);
-  } else {
-    console.log(">>> [SERVER] Production mode - serving static files.");
+    
+    app.listen(PORT, "0.0.0.0", () => {
+      console.log(`>>> [SERVER] Dev server running on http://0.0.0.0:${PORT}`);
+    });
+  } else if (!process.env.VERCEL) {
+    // Regular production server (dist mode)
     const distPath = path.join(process.cwd(), 'dist');
     app.use(express.static(distPath));
-    app.get('*', (req, res) => {
-      res.sendFile(path.join(distPath, 'index.html'));
+    app.get('*', (req, res) => res.sendFile(path.join(distPath, 'index.html')));
+    
+    app.listen(PORT, "0.0.0.0", () => {
+      console.log(`>>> [SERVER] Production server running on port ${PORT}`);
     });
   }
+  // If in Vercel, we don't call app.listen(), just export the app
 }
 
-// Start the server if running directly
-if (process.env.NODE_ENV !== "production" || !process.env.VERCEL) {
-  setupVite().then(() => {
-    app.listen(PORT, "0.0.0.0", () => {
-      console.log(`>>> [SERVER] Running on http://0.0.0.0:${PORT}`);
-    });
-  });
-} else {
-  // In production/Vercel, we still need to serve static files if it's hitting the root
-  // but Vercel manages the entry point.
-  // We'll call setupVite to register the static file handler
-  setupVite();
-}
+// Initial call for environments where it matters
+initialize().catch(err => console.error(">>> [SERVER] Initialization error:", err));
 
 export default app;
