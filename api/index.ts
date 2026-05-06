@@ -54,7 +54,16 @@ const PORT = 3000;
 app.use(cors());
 app.options("*", cors());
 
-// Define the upload handler function first to ensure it's available
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
+// Log all requests hitting /api
+app.all("/api/*", (req, res, next) => {
+  console.log(`>>> [SERVER] API Request: ${req.method} ${req.path}`);
+  next();
+});
+
+// Define the upload handler function
 const handleUpload = async (req: any, res: any) => {
   const requestId = Math.random().toString(36).substring(7);
   console.log(`[${requestId}] >>> [SERVER] Incoming upload request: ${req.file ? req.file.originalname : 'No file'}`);
@@ -107,21 +116,25 @@ const handleUpload = async (req: any, res: any) => {
 };
 
 // Main upload routes
-app.post("/api/upload", upload.single("file"), handleUpload);
-// Legacy path for compatibility (consolidated to same handler)
 app.post("/api/service/storage/upload", upload.single("file"), handleUpload);
+app.post("/api/upload", upload.single("file"), handleUpload);
+
+// Handle mismatched methods for upload
+app.all(["/api/upload", "/api/service/storage/upload"], (req, res) => {
+  res.status(405).json({ 
+    error: `Method ${req.method} not allowed. Please use POST.`,
+    tip: "If you see this from Vercel, check that your upload fetch call is using POST."
+  });
+});
 
 app.all("/api/health", (req, res) => {
   res.json({ 
     status: "ok", 
-    version: "2.1.0-fix",
+    version: "2.1.2-vercel-fix",
     time: new Date().toISOString(),
     supabaseInitialized: !!supabaseAdmin
   });
 });
-
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
 
 async function setupVite() {
   if (process.env.NODE_ENV !== "production") {

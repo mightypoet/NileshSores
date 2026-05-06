@@ -421,9 +421,9 @@ export const dataService = {
 
   // UPLOADS (Local Proxy)
   async uploadImage(file: File, _bucket: string): Promise<string | null> {
-    const uploadUrl = '/api/upload';
+    const uploadUrl = '/api/service/storage/upload';
     
-    console.log(`[DATA SERVICE] [V2.1] Starting image upload: ${file.name} to ${uploadUrl}`);
+    console.log(`[DATA SERVICE] [V2.2] Starting image upload: ${file.name} to ${uploadUrl}`);
     
     // Add a controller to handle timeouts
     const controller = new AbortController();
