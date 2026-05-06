@@ -50,36 +50,11 @@ const upload = multer({
 const app = express();
 const PORT = 3000;
 
-// 1. Logging Middleware
-app.use((req, res, next) => {
-  const timestamp = new Date().toISOString();
-  if (req.url.startsWith('/api')) {
-    console.log(`[${timestamp}] API REQUEST: ${req.method} ${req.url}`);
-  }
-  next();
-});
-
-// 2. CORS
+// ALWAYS FIRST: CORS
 app.use(cors());
 app.options("*", cors());
 
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
-
-// 3. API Routes
-app.all("/api/health", (req, res) => {
-  res.json({ 
-    status: "ok", 
-    time: new Date().toISOString(),
-    supabaseInitialized: !!supabaseAdmin,
-    env: {
-      hasUrl: !!supabaseUrl,
-      hasKey: !!supabaseServiceKey,
-      nodeEnv: process.env.NODE_ENV
-    }
-  });
-});
-
+// Define the upload handler function first to ensure it's available
 const handleUpload = async (req: any, res: any) => {
   const requestId = Math.random().toString(36).substring(7);
   console.log(`[${requestId}] >>> [SERVER] Incoming upload request: ${req.file ? req.file.originalname : 'No file'}`);
@@ -131,27 +106,22 @@ const handleUpload = async (req: any, res: any) => {
   }
 };
 
-// Diagnostic for 405: Log all methods hitting the upload endpoint
-app.all("/api/service/storage/upload", (req, res, next) => {
-  if (req.method === 'OPTIONS') return next(); // Let CORS handle preflight
-  
-  const timestamp = new Date().toISOString();
-  console.log(`[${timestamp}] >>> [SERVER] /api/service/storage/upload hit with method: ${req.method} from ${req.headers.origin || 'unknown origin'}`);
-  
-  if (req.method === 'POST') {
-    return next();
-  }
-  
-  res.status(405).json({ 
-    error: "Method Not Allowed. Please use POST for file uploads.",
-    receivedMethod: req.method
+// Main upload routes
+app.post("/api/upload", upload.single("file"), handleUpload);
+// Legacy path for compatibility (consolidated to same handler)
+app.post("/api/service/storage/upload", upload.single("file"), handleUpload);
+
+app.all("/api/health", (req, res) => {
+  res.json({ 
+    status: "ok", 
+    version: "2.1.0-fix",
+    time: new Date().toISOString(),
+    supabaseInitialized: !!supabaseAdmin
   });
 });
 
-// Main upload routes
-app.post("/api/service/storage/upload", upload.single("file"), handleUpload);
-app.post("/api/upload", upload.single("file"), handleUpload);
-app.post("/upload", upload.single("file"), handleUpload);
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
 async function setupVite() {
   if (process.env.NODE_ENV !== "production") {

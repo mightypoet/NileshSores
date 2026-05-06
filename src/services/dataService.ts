@@ -419,12 +419,11 @@ export const dataService = {
     }
   },
 
-  // UPLOADS (Vercel Blob via Proxy)
+  // UPLOADS (Local Proxy)
   async uploadImage(file: File, _bucket: string): Promise<string | null> {
-    // Using a more specific path to avoid platform conflicts
-    const uploadUrl = '/api/service/storage/upload';
+    const uploadUrl = '/api/upload';
     
-    console.log(`[DATA SERVICE] Starting image upload: ${file.name} to ${uploadUrl} (Current Origin: ${window.location.origin})`);
+    console.log(`[DATA SERVICE] [V2.1] Starting image upload: ${file.name} to ${uploadUrl}`);
     
     // Add a controller to handle timeouts
     const controller = new AbortController();
@@ -434,7 +433,6 @@ export const dataService = {
       const formData = new FormData();
       formData.append('file', file);
 
-      // Log what we're sending
       console.log(`[DATA SERVICE] Payload: FormData with file: ${file.name}, size: ${file.size} bytes`);
 
       const response = await fetch(uploadUrl, {
@@ -456,7 +454,7 @@ export const dataService = {
           errorMessage = errorData.error || errorMessage;
         } catch (e) {
           if (responseText.includes('<!DOCTYPE html>')) {
-            errorMessage = "Server returned HTML instead of JSON. Ensure the server is running and the route exists.";
+            errorMessage = "Server returned HTML instead of JSON. Check routing.";
           } else {
             errorMessage = responseText.substring(0, 100);
           }

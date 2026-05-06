@@ -1,10 +1,12 @@
 {
   "version": 2,
+  "functions": {
+    "server.ts": {
+      "memory": 1024,
+      "maxDuration": 60
+    }
+  },
   "rewrites": [
-    {
-      "source": "/api/service/storage/upload",
-      "destination": "/server.ts"
-    },
     {
       "source": "/api/(.*)",
       "destination": "/server.ts"
