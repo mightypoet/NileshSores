@@ -20,13 +20,17 @@ function getSupabaseAdmin() {
   if (_supabaseAdmin) return _supabaseAdmin;
   
   const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL;
-  const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  // Try multiple possible names for the service role key
+  const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY || process.env.SERVICE_ROLE_KEY;
 
   if (!supabaseUrl || !supabaseServiceKey) {
     const missing = [];
     if (!supabaseUrl) missing.push("SUPABASE_URL");
     if (!supabaseServiceKey) missing.push("SUPABASE_SERVICE_ROLE_KEY");
-    console.warn(`>>> [SERVER] Missing configuration: ${missing.join(", ")}`);
+    
+    // Diagnostic: Log available env keys (not values) to help debugging
+    const envKeys = Object.keys(process.env).filter(k => k.includes('SUPABASE') || k.includes('KEY') || k.includes('URL'));
+    console.warn(`>>> [SERVER] Missing configuration: ${missing.join(", ")}. Available relevant keys: ${envKeys.join(', ')}`);
     return null;
   }
 
@@ -90,16 +94,18 @@ const handleUpload = async (req: any, res: any) => {
     const admin = getSupabaseAdmin();
     if (!admin) {
       const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL;
-      const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+      const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY || process.env.SERVICE_ROLE_KEY;
       
       const missing = [];
-      if (!supabaseUrl) missing.push("VITE_SUPABASE_URL");
+      if (!supabaseUrl) missing.push("SUPABASE_URL");
       if (!supabaseServiceKey) missing.push("SUPABASE_SERVICE_ROLE_KEY");
 
-      console.error(`[${requestId}] >>> [SERVER] Upload failed: Missing ${missing.join(" and ")}.`);
+      const envKeys = Object.keys(process.env).filter(k => k.includes('SUPABASE') || k.includes('KEY') || k.includes('URL'));
+      console.error(`[${requestId}] >>> [SERVER] Upload failed: Missing ${missing.join(" and ")}. Available keys: ${envKeys.join(', ')}`);
+      
       return res.status(500).json({ 
         error: `Server configuration error: Missing ${missing.join(" and ")}.`,
-        tip: "Please go to the Settings menu (top right) -> Secrets and add these keys."
+        tip: `Please ensure you have added 'SUPABASE_SERVICE_ROLE_KEY' in the Secrets menu. Detected relevant keys: ${envKeys.join(', ') || 'none'}`
       });
     }
 
