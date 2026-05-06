@@ -19,11 +19,14 @@ let _supabaseAdmin: any = null;
 function getSupabaseAdmin() {
   if (_supabaseAdmin) return _supabaseAdmin;
   
-  const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL;
   const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
   if (!supabaseUrl || !supabaseServiceKey) {
-    console.warn(">>> [SERVER] SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY is missing.");
+    const missing = [];
+    if (!supabaseUrl) missing.push("SUPABASE_URL");
+    if (!supabaseServiceKey) missing.push("SUPABASE_SERVICE_ROLE_KEY");
+    console.warn(`>>> [SERVER] Missing configuration: ${missing.join(", ")}`);
     return null;
   }
 
@@ -86,10 +89,17 @@ const handleUpload = async (req: any, res: any) => {
   try {
     const admin = getSupabaseAdmin();
     if (!admin) {
-      console.error(`[${requestId}] >>> [SERVER] Upload failed: Supabase Admin client not initialized.`);
+      const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL;
+      const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+      
+      const missing = [];
+      if (!supabaseUrl) missing.push("VITE_SUPABASE_URL");
+      if (!supabaseServiceKey) missing.push("SUPABASE_SERVICE_ROLE_KEY");
+
+      console.error(`[${requestId}] >>> [SERVER] Upload failed: Missing ${missing.join(" and ")}.`);
       return res.status(500).json({ 
-        error: "Server configuration error: Supabase Service Role Key missing.",
-        tip: "Please ensure SUPABASE_SERVICE_ROLE_KEY is set in your environment variables."
+        error: `Server configuration error: Missing ${missing.join(" and ")}.`,
+        tip: "Please go to the Settings menu (top right) -> Secrets and add these keys."
       });
     }
 
@@ -138,9 +148,20 @@ app.post("/api/upload", upload.single("file"), handleUpload);
 app.all("/api/health", (req, res) => {
   res.json({ 
     status: "ok", 
-    version: "3.1.0-serverless-ready",
+    version: "3.1.1-debug",
     time: new Date().toISOString(),
     supabaseInitialized: !!getSupabaseAdmin()
+  });
+});
+
+// Catch-all for unhandled /api routes
+app.all("/api/*", (req, res) => {
+  console.log(`>>> [SERVER] 404 Unhandled API Request: ${req.method} ${req.path}`);
+  res.status(404).json({ 
+    error: "API route not found", 
+    method: req.method,
+    path: req.path,
+    tip: "Ensure your request matches /api/upload or /api/service/storage/upload"
   });
 });
 

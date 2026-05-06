@@ -452,6 +452,9 @@ export const dataService = {
         try {
           const errorData = JSON.parse(responseText);
           errorMessage = errorData.error || errorMessage;
+          if (errorData.tip) {
+            errorMessage += `. ${errorData.tip}`;
+          }
         } catch (e) {
           if (responseText.includes('<!DOCTYPE html>')) {
             errorMessage = "Server returned HTML instead of JSON. Check routing.";
