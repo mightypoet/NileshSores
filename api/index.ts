@@ -19,9 +19,40 @@ let _supabaseAdmin: any = null;
 function getSupabaseAdmin() {
   if (_supabaseAdmin) return _supabaseAdmin;
   
-  const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL;
-  // Try multiple possible names for the service role key
-  const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY || process.env.SERVICE_ROLE_KEY;
+  // URL detection with multiple fallbacks
+  let supabaseUrl = process.env.VITE_SUPABASE_URL || 
+                    process.env.NEXT_PUBLIC_SUPABASE_URL || 
+                    process.env.SUPABASE_URL ||
+                    process.env.SUPABASE_REST_URL;
+
+  // If URL is still missing, look for anything that looks like a Supabase URL
+  if (!supabaseUrl) {
+    const likelyUrlKey = Object.keys(process.env).find(k => 
+      k.includes('SUPABASE') && k.includes('URL')
+    );
+    if (likelyUrlKey) supabaseUrl = process.env[likelyUrlKey];
+  }
+
+  // Service Key detection with multiple fallbacks
+  let supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || 
+                           process.env.SUPABASE_SERVICE_KEY || 
+                           process.env.SERVICE_ROLE_KEY ||
+                           process.env.VITE_SUPABASE_SERVICE_ROLE_KEY ||
+                           process.env.NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY ||
+                           process.env.SUPABASE_SECRET_KEY ||
+                           process.env.SUPABASE_ADMIN_KEY;
+
+  // If key is still missing, look for anything that looks like a Supabase service/secret key
+  if (!supabaseServiceKey) {
+    const likelyKeyKey = Object.keys(process.env).find(k => 
+      (k.includes('SUPABASE') && (k.includes('SERVICE') || k.includes('SECRET') || k.includes('ROLE') || k.includes('ADMIN'))) &&
+      !k.includes('ANON') && !k.includes('PUBLISHABLE')
+    );
+    if (likelyKeyKey) {
+      console.log(`>>> [SERVER] Detected likely Supabase service key in env: ${likelyKeyKey}`);
+      supabaseServiceKey = process.env[likelyKeyKey];
+    }
+  }
 
   if (!supabaseUrl || !supabaseServiceKey) {
     const missing = [];
@@ -29,19 +60,25 @@ function getSupabaseAdmin() {
     if (!supabaseServiceKey) missing.push("SUPABASE_SERVICE_ROLE_KEY");
     
     // Diagnostic: Log available env keys (not values) to help debugging
-    const envKeys = Object.keys(process.env).filter(k => k.includes('SUPABASE') || k.includes('KEY') || k.includes('URL'));
+    const envKeys = Object.keys(process.env).filter(k => 
+      k.includes('SUPABASE') || k.includes('KEY') || k.includes('URL') || k.includes('SERVICE') || k.includes('SECRET')
+    );
     console.warn(`>>> [SERVER] Missing configuration: ${missing.join(", ")}. Available relevant keys: ${envKeys.join(', ')}`);
     return null;
   }
 
-  _supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
-    auth: {
-      autoRefreshToken: false,
-      persistSession: false
-    }
-  });
-
-  return _supabaseAdmin;
+  try {
+    _supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false
+      }
+    });
+    return _supabaseAdmin;
+  } catch (err: any) {
+    console.error(">>> [SERVER] Failed to create Supabase client:", err.message);
+    return null;
+  }
 }
 
 // Ensure bucket exists (only runs once or on demand)
@@ -93,19 +130,15 @@ const handleUpload = async (req: any, res: any) => {
   try {
     const admin = getSupabaseAdmin();
     if (!admin) {
-      const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL;
-      const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY || process.env.SERVICE_ROLE_KEY;
+      const envKeys = Object.keys(process.env).filter(k => 
+        k.includes('SUPABASE') || k.includes('KEY') || k.includes('URL') || k.includes('SERVICE') || k.includes('SECRET')
+      );
       
-      const missing = [];
-      if (!supabaseUrl) missing.push("SUPABASE_URL");
-      if (!supabaseServiceKey) missing.push("SUPABASE_SERVICE_ROLE_KEY");
-
-      const envKeys = Object.keys(process.env).filter(k => k.includes('SUPABASE') || k.includes('KEY') || k.includes('URL'));
-      console.error(`[${requestId}] >>> [SERVER] Upload failed: Missing ${missing.join(" and ")}. Available keys: ${envKeys.join(', ')}`);
+      console.error(`[${requestId}] >>> [SERVER] Upload failed: Supabase Admin client not initialized. Available keys: ${envKeys.join(', ')}`);
       
       return res.status(500).json({ 
-        error: `Server configuration error: Missing ${missing.join(" and ")}.`,
-        tip: `Please ensure you have added 'SUPABASE_SERVICE_ROLE_KEY' in the Secrets menu. Detected relevant keys: ${envKeys.join(', ') || 'none'}`
+        error: `Server configuration error: Supabase connection could not be established.`,
+        tip: `Detected relevant keys in environment: ${envKeys.join(', ') || 'none'}. Please ensure you have added 'SUPABASE_SERVICE_ROLE_KEY' in the Secrets menu.`
       });
     }
 
