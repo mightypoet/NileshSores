@@ -23,14 +23,19 @@ function getSupabaseAdmin() {
   let supabaseUrl = process.env.VITE_SUPABASE_URL || 
                     process.env.NEXT_PUBLIC_SUPABASE_URL || 
                     process.env.SUPABASE_URL ||
-                    process.env.SUPABASE_REST_URL;
+                    process.env.SUPABASE_REST_URL ||
+                    process.env.NEXT_PUBLIC_SUPABASE_REST_URL;
 
   // If URL is still missing, look for anything that looks like a Supabase URL
   if (!supabaseUrl) {
     const likelyUrlKey = Object.keys(process.env).find(k => 
-      k.includes('SUPABASE') && k.includes('URL')
+      (k.includes('SUPABASE') && k.includes('URL')) || 
+      (k.includes('SUPABASE') && k.includes('endpoint'))
     );
-    if (likelyUrlKey) supabaseUrl = process.env[likelyUrlKey];
+    if (likelyUrlKey) {
+      console.log(`>>> [SERVER] Detected likely Supabase URL in env: ${likelyUrlKey}`);
+      supabaseUrl = process.env[likelyUrlKey];
+    }
   }
 
   // Service Key detection with multiple fallbacks
@@ -40,7 +45,8 @@ function getSupabaseAdmin() {
                            process.env.VITE_SUPABASE_SERVICE_ROLE_KEY ||
                            process.env.NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY ||
                            process.env.SUPABASE_SECRET_KEY ||
-                           process.env.SUPABASE_ADMIN_KEY;
+                           process.env.SUPABASE_ADMIN_KEY ||
+                           process.env.SUPABASE_MASTER_KEY;
 
   // If key is still missing, look for anything that looks like a Supabase service/secret key
   if (!supabaseServiceKey) {
@@ -214,7 +220,7 @@ async function initialize() {
       appType: "spa",
       define: {
         'import.meta.env.VITE_SUPABASE_URL': JSON.stringify(process.env.VITE_SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL),
-        'import.meta.env.VITE_SUPABASE_ANON_KEY': JSON.stringify(process.env.VITE_SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY)
+        'import.meta.env.VITE_SUPABASE_ANON_KEY': JSON.stringify(process.env.VITE_SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY)
       }
     });
     app.use(vite.middlewares);
