@@ -48,10 +48,23 @@ function getSupabaseAdmin() {
                            process.env.SUPABASE_ADMIN_KEY ||
                            process.env.SUPABASE_MASTER_KEY;
 
+  // FALLBACK: If service key is missing, try using the publishable/anon key
+  // This might work if the bucket is public and policies allow
+  if (!supabaseServiceKey) {
+    supabaseServiceKey = process.env.VITE_SUPABASE_ANON_KEY || 
+                         process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 
+                         process.env.VITE_SUPABASE_PUBLISHABLE_KEY || 
+                         process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
+    
+    if (supabaseServiceKey) {
+      console.warn(">>> [SERVER] WARNING: Using ANON/PUBLISHABLE key as fallback for Admin client. Storage uploads may fail if RLS is strict.");
+    }
+  }
+
   // If key is still missing, look for anything that looks like a Supabase service/secret key
   if (!supabaseServiceKey) {
     const likelyKeyKey = Object.keys(process.env).find(k => 
-      (k.includes('SUPABASE') && (k.includes('SERVICE') || k.includes('SECRET') || k.includes('ROLE') || k.includes('ADMIN'))) &&
+      (k.includes('SUPABASE') && (k.includes('SERVICE') || k.includes('SECRET') || k.includes('ROLE') || k.includes('ADMIN') || k.includes('KEY'))) &&
       !k.includes('ANON') && !k.includes('PUBLISHABLE')
     );
     if (likelyKeyKey) {
@@ -66,12 +79,17 @@ function getSupabaseAdmin() {
     if (!supabaseServiceKey) missing.push("SUPABASE_SERVICE_ROLE_KEY");
     
     // Diagnostic: Log available env keys (not values) to help debugging
-    const envKeys = Object.keys(process.env).filter(k => 
+    const envEntries = Object.entries(process.env).filter(([k]) => 
       k.includes('SUPABASE') || k.includes('KEY') || k.includes('URL') || k.includes('SERVICE') || k.includes('SECRET')
-    );
-    console.warn(`>>> [SERVER] Missing configuration: ${missing.join(", ")}. Available relevant keys: ${envKeys.join(', ')}`);
+    ).map(([k, v]) => `${k} (starts with: ${v ? v.substring(0, 5) + '...' : 'empty'})`);
+
+    console.warn(`>>> [SERVER] Missing configuration: ${missing.join(", ")}. Found relevant env variables: \n${envEntries.join('\n')}`);
     return null;
   }
+
+  // Diagnostic for valid credentials
+  const keyType = supabaseServiceKey.length > 100 ? "SERVICE_ROLE/SECRET" : "ANON/PUBLISHABLE (Likely short)";
+  console.log(`>>> [SERVER] Supabase client initialized with URL: ${supabaseUrl.substring(0, 15)}... and key type: ${keyType}`);
 
   try {
     _supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
@@ -144,7 +162,7 @@ const handleUpload = async (req: any, res: any) => {
       
       return res.status(500).json({ 
         error: `Server configuration error: Supabase connection could not be established.`,
-        tip: `Detected relevant keys in environment: ${envKeys.join(', ') || 'none'}. Please ensure you have added 'SUPABASE_SERVICE_ROLE_KEY' in the Secrets menu.`
+        tip: `Detected relevant keys in environment: ${envKeys.join(', ') || 'none'}. Please ensure you have added 'SUPABASE_SERVICE_ROLE_KEY' in the Secrets menu. If you only have a publishable key, insure it's named 'NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY'.`
       });
     }
 
