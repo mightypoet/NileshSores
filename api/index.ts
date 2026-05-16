@@ -101,7 +101,7 @@ function getSupabaseAdmin() {
     return _supabaseAdmin;
   } catch (err: any) {
     console.error(">>> [SERVER] Failed to create Supabase client:", err.message);
-    return null;
+    throw new Error(`Failed to create Supabase client: ${err.message}`);
   }
 }
 
@@ -152,7 +152,14 @@ const handleUpload = async (req: any, res: any) => {
   console.log(`[${requestId}] >>> [SERVER] Incoming upload request: ${req.file ? req.file.originalname : 'No file'}`);
   
   try {
-    const admin = getSupabaseAdmin();
+    let admin;
+    try {
+      admin = getSupabaseAdmin();
+    } catch (e: any) {
+      console.error(`[${requestId}] >>> [SERVER] Upload failed due to Supabase init error:`, e.message);
+      return res.status(500).json({ error: e.message });
+    }
+    
     if (!admin) {
       const envKeys = Object.keys(process.env).filter(k => 
         k.includes('SUPABASE') || k.includes('KEY') || k.includes('URL') || k.includes('SERVICE') || k.includes('SECRET')

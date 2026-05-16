@@ -3,102 +3,67 @@ import { Product, Category, Banner, Order, UserProfile } from '../types';
 import { products as mockProducts, categories as mockCategories } from '../data/mockData';
 import { toast } from 'sonner';
 
-// Helper to map DB snake_case to UI camelCase
+// Helper to map DB to UI
 const mapProductFromDb = (p: any): Product => ({
   ...p,
-  reviewsCount: p.reviews_count !== undefined ? p.reviews_count : p.reviewsCount,
-  gstRate: p.gst_rate !== undefined ? p.gst_rate : p.gstRate,
-  categoryId: p.category_id !== undefined ? p.category_id : p.categoryId,
-  isBestSeller: p.is_best_seller !== undefined ? p.is_best_seller : p.isBestSeller,
-  createdAt: p.created_at || p.createdAt,
-  updatedAt: p.updated_at || p.updatedAt,
-  categoryName: p.categories?.name
+  reviewsCount: p.reviewscount !== undefined ? p.reviewscount : (p.reviewsCount || 0),
+  gstRate: p.gstrate !== undefined ? p.gstrate : (p.gstRate || 0),
 });
 
-// Helper to map UI camelCase to DB snake_case
+// Helper to map UI to DB
 const mapProductToDb = (p: any): any => {
-  const { 
-    reviewsCount, 
-    gstRate, 
-    categoryId, 
-    isBestSeller, 
-    createdAt, 
-    updatedAt, 
-    categoryName,
-    ...rest 
-  } = p;
-  
+  const { reviewsCount, gstRate, categoryName, ...rest } = p;
   const mapped: any = { ...rest };
-  // Standard snake_case mapping for DB
-  if (reviewsCount !== undefined) mapped.reviews_count = reviewsCount;
-  if (gstRate !== undefined) mapped.gst_rate = gstRate;
-  if (categoryId !== undefined) mapped.category_id = categoryId;
-  if (isBestSeller !== undefined) mapped.is_best_seller = isBestSeller;
-  if (createdAt !== undefined) mapped.created_at = createdAt;
-  if (updatedAt !== undefined) mapped.updated_at = updatedAt;
-  
+  if (reviewsCount !== undefined) mapped.reviewscount = reviewsCount;
+  if (gstRate !== undefined) mapped.gstrate = gstRate;
   return mapped;
 };
 
 const mapCategoryFromDb = (c: any): Category => ({
   ...c,
-  parentId: c.parent_id !== undefined ? c.parent_id : c.parentId,
-  sortOrder: c.sort_order !== undefined ? c.sort_order : c.sortOrder
 });
 
 const mapCategoryToDb = (c: any): any => {
   const { parentId, sortOrder, ...rest } = c;
-  const mapped: any = { ...rest };
-  if (parentId !== undefined) mapped.parent_id = parentId;
-  if (sortOrder !== undefined) mapped.sort_order = sortOrder;
-  return mapped;
+  return rest; // parentId and sortOrder don't exist in DB
 };
 
 const mapOrderFromDb = (o: any): Order => ({
-  ...o,
-  orderNumber: o.order_number || o.orderNumber,
-  userId: o.user_id || o.userId,
-  gstAmount: o.gst_amount || o.gstAmount,
-  shippingCharge: o.shipping_charge || o.shippingCharge,
-  grandTotal: o.grand_total || o.grandTotal,
-  paymentStatus: o.payment_status || o.paymentStatus,
-  paymentMethod: o.payment_method || o.paymentMethod,
-  shippingAddress: o.shipping_address || o.shippingAddress,
-  createdAt: o.created_at || o.createdAt
+  id: o.id,
+  orderNumber: o.orderNumber || '000',
+  userId: o.user_id || '',
+  status: o.status || 'pending',
+  total: o.totalAmount || 0,
+  gstAmount: 0,
+  shippingCharge: 0,
+  grandTotal: o.totalAmount || 0,
+  paymentStatus: o.paymentStatus || 'pending',
+  paymentMethod: 'cod', // not in db
+  shippingAddress: o.shippingAddress || {} as any,
+  items: o.items || [],
+  createdAt: o.createdAt
 });
 
 const mapUserFromDb = (u: any): UserProfile => ({
-  ...u,
-  createdAt: u.created_at || u.createdAt
+  id: u.id,
+  name: u.fullName || u.name || '',
+  email: u.email || '',
+  role: u.role || 'customer',
+  createdAt: u.createdAt
 });
 
 const mapOrderToDb = (o: any): any => {
-  const { 
-    orderNumber, 
-    userId, 
-    gstAmount, 
-    shippingCharge, 
-    grandTotal, 
-    paymentStatus, 
-    paymentMethod, 
-    shippingAddress,
-    createdAt,
-    ...rest 
-  } = o;
-  
-  const mapped: any = { ...rest };
-  // Standard snake_case mapping for DB
-  if (orderNumber !== undefined) mapped.order_number = orderNumber;
-  if (userId !== undefined) mapped.user_id = userId;
-  if (gstAmount !== undefined) mapped.gst_amount = gstAmount;
-  if (shippingCharge !== undefined) mapped.shipping_charge = shippingCharge;
-  if (grandTotal !== undefined) mapped.grand_total = grandTotal;
-  if (paymentStatus !== undefined) mapped.payment_status = paymentStatus;
-  if (paymentMethod !== undefined) mapped.payment_method = paymentMethod;
-  if (shippingAddress !== undefined) mapped.shipping_address = shippingAddress;
-  if (createdAt !== undefined) mapped.created_at = createdAt;
-  
-  return mapped;
+  return {
+    orderNumber: o.orderNumber,
+    user_id: o.userId,
+    customerName: o.shippingAddress?.fullName || '',
+    customerEmail: '', // Usually derived elsewhere
+    totalAmount: o.grandTotal || o.total || 0,
+    items: o.items || [],
+    status: o.status,
+    paymentStatus: o.paymentStatus,
+    shippingAddress: o.shippingAddress
+  };
 };
 
 export const dataService = {
@@ -213,11 +178,8 @@ export const dataService = {
   async updateProduct(id: string, updates: Partial<Product>): Promise<Product | null> {
     if (!supabase) return null;
     try {
-      const { id: _, created_at: __, categories: ___, categoryName: ____, ...rest } = updates as any;
+      const { id: _, created_at: __, createdAt: ___, updatedAt: ____, categories: _____, categoryName: ______, ...rest } = updates as any;
       const payload = mapProductToDb(rest);
-      // Ensure we don't try to update fields that shouldn't be updated
-      delete payload.created_at;
-      delete payload.id;
       
       console.log("[DATA SERVICE] Updating product with payload:", payload);
       
@@ -361,7 +323,7 @@ export const dataService = {
         .order('order');
       
       if (error) throw error;
-      return data as Banner[];
+      return (data as any[]).map(b => ({ ...b, active: true }));
     } catch (error) {
       console.error("Error fetching banners from Supabase:", error);
       return [];
@@ -371,14 +333,15 @@ export const dataService = {
   async createBanner(banner: Partial<Banner>): Promise<Banner | null> {
     if (!supabase) return null;
     try {
+      const { active, ...dbBanner } = banner;
       const { data, error } = await supabase
         .from('banners')
-        .insert([banner])
+        .insert([{ ...dbBanner, id: dbBanner.id || crypto.randomUUID() }])
         .select()
         .single();
       
       if (error) throw error;
-      return data as Banner;
+      return { ...data, active: true } as Banner;
     } catch (error) {
       console.error("Error creating banner in Supabase:", error);
       return null;
@@ -388,15 +351,16 @@ export const dataService = {
   async updateBanner(id: string, updates: Partial<Banner>): Promise<Banner | null> {
     if (!supabase) return null;
     try {
+      const { active, ...dbBanner } = updates;
       const { data, error } = await supabase
         .from('banners')
-        .update(updates)
+        .update(dbBanner)
         .eq('id', id)
         .select()
         .single();
       
       if (error) throw error;
-      return data as Banner;
+      return { ...data, active: true } as Banner;
     } catch (error) {
       console.error("Error updating banner in Supabase:", error);
       return null;
