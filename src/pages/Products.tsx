@@ -40,12 +40,24 @@ export default function Products() {
 
   const selectedCategory = searchParams.get('category');
   const filterType = searchParams.get('filter');
+  const selectedCollection = searchParams.get('collection');
 
   const filteredProducts = useMemo(() => {
     let result = [...products];
 
     if (selectedCategory) {
       result = result.filter(p => p.categoryId === selectedCategory);
+    }
+
+    if (selectedCollection) {
+      // In UI we pass the slug, but in database it might be stored as name or slug.
+      // We will match case-insensitive to either slug or exact name.
+      result = result.filter(p => 
+        p.collection && (
+          p.collection.toLowerCase() === selectedCollection.toLowerCase() ||
+          p.collection.toLowerCase().replace(/[^a-z0-9]+/g, '-') === selectedCollection.toLowerCase()
+        )
+      );
     }
 
     if (filterType === 'best-seller') {

@@ -23,6 +23,7 @@ import { toast } from 'sonner';
 const AdminProducts: React.FC = () => {
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
+  const [collections, setCollections] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -57,6 +58,12 @@ const AdminProducts: React.FC = () => {
       ]);
       setProducts(p);
       setCategories(c);
+      
+      const { supabase } = await import('../../lib/supabase');
+      if (supabase) {
+        const { data } = await supabase.from('collections').select('id, name, slug').order('name');
+        if (data) setCollections(data);
+      }
     } catch (error) {
       console.error('Error fetching data:', error);
       toast.error('Failed to load products');
@@ -483,14 +490,17 @@ const AdminProducts: React.FC = () => {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-2">
-                    <label className="text-sm font-bold text-zinc-700 uppercase tracking-wider">Collection / Tag</label>
-                    <input 
-                      type="text" 
-                      placeholder="e.g. Summer Special"
-                      className="w-full px-4 py-2.5 border border-zinc-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                      value={formData.collection}
+                    <label className="text-sm font-bold text-zinc-700 uppercase tracking-wider">Collection</label>
+                    <select 
+                      className="w-full px-4 py-2.5 border border-zinc-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
+                      value={formData.collection || ''}
                       onChange={(e) => setFormData({...formData, collection: e.target.value})}
-                    />
+                    >
+                      <option value="">No Collection</option>
+                      {collections.map(col => (
+                        <option key={col.id} value={col.slug}>{col.name}</option>
+                      ))}
+                    </select>
                   </div>
                   <div className="flex items-center gap-2 pt-8">
                     <input 

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { LayoutDashboard, Plus, Pencil, Trash2, Loader2, Save, X, Image as ImageIcon, AlertCircle } from 'lucide-react';
 import { Button } from '../../components/ui/button';
 import { dataService } from '../../services/dataService';
+import { supabase } from '../../lib/supabase';
 import { motion } from 'motion/react';
 import { toast } from 'sonner';
 
@@ -30,7 +31,7 @@ export default function AdminCollections() {
     try {
       setLoading(true);
       // We will check if we can fetch collections
-      const { data, error } = await dataService.supabase.from('collections').select('*').order('sort_order');
+      const { data, error } = await supabase.from('collections').select('*').order('sort_order');
       
       if (error) {
         if (error.code === 'PGRST205' || error.message?.includes('Could not find the table') || error.message?.includes('does not exist')) {
@@ -63,7 +64,7 @@ export default function AdminCollections() {
   const handleDelete = async (id: string) => {
     if (!window.confirm('Are you sure you want to delete this collection?')) return;
     try {
-      const { error } = await dataService.supabase.from('collections').delete().eq('id', id);
+      const { error } = await supabase.from('collections').delete().eq('id', id);
       if (error) throw error;
       toast.success('Collection deleted');
       setCollections(collections.filter(c => c.id !== id));
@@ -87,7 +88,7 @@ export default function AdminCollections() {
     try {
       setLoading(true);
       if (formData.id) {
-        const { error } = await dataService.supabase
+        const { error } = await supabase
           .from('collections')
           .update(formData)
           .eq('id', formData.id);
@@ -96,7 +97,7 @@ export default function AdminCollections() {
         setCollections(collections.map(c => c.id === formData.id ? formData : c));
       } else {
         const { id, ...newCol } = formData;
-        const { data, error } = await dataService.supabase
+        const { data, error } = await supabase
           .from('collections')
           .insert([newCol])
           .select()

@@ -39,9 +39,12 @@ export default function Home() {
 
         // Attempt to fetch collections
         try {
-          const { data } = await dataService.supabase.from('collections').select('*').eq('status', 'active').order('sort_order');
-          if (data && data.length > 0) {
-            setCollections(data);
+          const { supabase } = await import('../lib/supabase');
+          if (supabase) {
+            const { data } = await supabase.from('collections').select('*').eq('status', 'active').order('sort_order');
+            if (data && data.length > 0) {
+              setCollections(data);
+            }
           }
         } catch (colErr) {
           console.log("Collections table not available yet, using fallback");
