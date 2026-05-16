@@ -15,6 +15,13 @@ export default function Home() {
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [banners, setBanners] = useState<Banner[]>([]);
+  const [collections, setCollections] = useState<any[]>([
+    // Fallback collections just in case table not created
+    { name: 'Inkredibles Series', image: 'https://cdn.shopify.com/s/files/1/0681/1510/3931/products/JumboNoteBookHardBound-1.jpg', description: 'Creative tools for little hands' },
+    { name: 'The Guardians', image: 'https://cdn.shopify.com/s/files/1/0681/1510/3931/products/EconamaCaseBoundA5Book_800x.jpg', description: 'Elite gear for serious protection' },
+    { name: 'Eco Warriors', image: 'https://cdn.shopify.com/s/files/1/0681/1510/3931/files/Mumbai-indians-Banner-Web_1.jpg', description: 'Stationery for the environment' },
+    { name: 'Art & Craft', image: 'https://cdn.shopify.com/s/files/1/0681/1510/3931/products/EconamaDrawingBook-3ARed_800x.jpg', description: 'Unleash your imagination' },
+  ]);
   const [loading, setLoading] = useState(true);
   const [currentBanner, setCurrentBanner] = useState(0);
 
@@ -29,6 +36,17 @@ export default function Home() {
         setProducts(prods);
         setCategories(cats);
         setBanners(bans.filter(b => b.active));
+
+        // Attempt to fetch collections
+        try {
+          const { data } = await dataService.supabase.from('collections').select('*').eq('status', 'active').order('sort_order');
+          if (data && data.length > 0) {
+            setCollections(data);
+          }
+        } catch (colErr) {
+          console.log("Collections table not available yet, using fallback");
+        }
+
       } catch (error) {
         console.error("Error fetching data:", error);
       } finally {
@@ -49,13 +67,6 @@ export default function Home() {
   }, [banners]);
 
   const bestSellers = products.filter(p => p.isBestSeller).slice(0, 8);
-  
-  const featuredCollections = [
-    { name: 'Inkredibles Series', image: 'https://cdn.shopify.com/s/files/1/0681/1510/3931/products/JumboNoteBookHardBound-1.jpg', desc: 'Creative tools for little hands' },
-    { name: 'The Guardians', image: 'https://cdn.shopify.com/s/files/1/0681/1510/3931/products/EconamaCaseBoundA5Book_800x.jpg', desc: 'Elite gear for serious protection' },
-    { name: 'Eco Warriors', image: 'https://cdn.shopify.com/s/files/1/0681/1510/3931/files/Mumbai-indians-Banner-Web_1.jpg', desc: 'Stationery for the environment' },
-    { name: 'Art & Craft', image: 'https://cdn.shopify.com/s/files/1/0681/1510/3931/products/EconamaDrawingBook-3ARed_800x.jpg', desc: 'Unleash your imagination' },
-  ];
 
   const handleAddToCart = (product: Product) => {
     addItem({
@@ -317,12 +328,12 @@ export default function Home() {
             <h3 className="text-5xl md:text-6xl font-black tracking-tighter">Our Collections</h3>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-            {featuredCollections.map((col, idx) => (
-              <Link key={idx} to="/products" className="group relative block aspect-[4/5] rounded-[3rem] overflow-hidden">
+            {collections.map((col, idx) => (
+              <Link key={idx} to={col.slug ? "/products?collection=" + col.slug : "/products"} className="group relative block aspect-[4/5] rounded-[3rem] overflow-hidden">
                 <img src={col.image} alt={col.name} className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-110" />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent p-10 flex flex-col justify-end text-white">
                   <h4 className="text-2xl font-black mb-2">{col.name}</h4>
-                  <p className="text-[10px] font-bold text-white/60 mb-6 group-hover:translate-x-2 transition-transform normal-case tracking-normal">{col.desc}</p>
+                  <p className="text-[10px] font-bold text-white/60 mb-6 group-hover:translate-x-2 transition-transform normal-case tracking-normal">{col.description || col.desc}</p>
                   <div className="h-12 w-12 rounded-full border border-white/20 flex items-center justify-center group-hover:bg-primary group-hover:border-primary transition-all">
                     <ArrowRight className="h-5 w-5" />
                   </div>

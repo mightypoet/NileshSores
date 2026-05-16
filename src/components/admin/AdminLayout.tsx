@@ -40,6 +40,7 @@ const AdminLayout: React.FC = () => {
     { name: 'Dashboard', path: '/admin', icon: LayoutDashboard },
     { name: 'Orders', path: '/admin/orders', icon: ShoppingCart },
     { name: 'Products', path: '/admin/products', icon: Package },
+    { name: 'Collections', path: '/admin/collections', icon: Layers },
     { name: 'Categories', path: '/admin/categories', icon: Layers },
     { name: 'Users', path: '/admin/users', icon: Users },
     { name: 'Banners', path: '/admin/banners', icon: ImageIcon },

@@ -25,6 +25,7 @@ import AdminDashboard from './pages/admin/Dashboard';
 import AdminProducts from './pages/admin/Products';
 import AdminCategories from './pages/admin/Categories';
 import AdminBanners from './pages/admin/Banners';
+import AdminCollections from './pages/admin/Collections';
 import AdminOrders from './pages/admin/Orders';
 import AdminUsers from './pages/admin/Users';
 
@@ -95,6 +96,7 @@ export default function App() {
               <Route index element={<AdminDashboard />} />
               <Route path="orders" element={<AdminOrders />} />
               <Route path="products" element={<AdminProducts />} />
+              <Route path="collections" element={<AdminCollections />} />
               <Route path="categories" element={<AdminCategories />} />
               <Route path="users" element={<AdminUsers />} />
               <Route path="banners" element={<AdminBanners />} />
