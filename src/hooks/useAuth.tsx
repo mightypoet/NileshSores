@@ -76,7 +76,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await firebaseSignOut(auth);
   };
 
-  const isUserAdmin = profile?.role === 'admin' || user?.email === 'storesnilesh@gmail.com';
+  const isUserAdmin = profile?.role === 'admin' || user?.email === 'storesnilesh@gmail.com' || user?.email === 'rohan00as@gmail.com';
 
   const value = {
     user,

@@ -1,5 +1,6 @@
 import "dotenv/config";
 import { config } from "dotenv";
+config({ path: '.env' });
 config({ path: '.env.local' });
 import express from "express";
 import path from "path";
