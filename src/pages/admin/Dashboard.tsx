@@ -38,7 +38,7 @@ export default function AdminDashboard() {
 
       const totalRevenue = orders
         .filter(o => o.paymentStatus === 'paid')
-        .reduce((sum, o) => sum + o.grandTotal, 0);
+        .reduce((sum, o) => sum + (o.grandTotal || 0), 0);
 
       setStats([
         { label: 'Total Revenue', value: `₹${totalRevenue.toLocaleString()}`, change: '+12.5%', icon: DollarSign, color: 'text-green-500', bg: 'bg-green-50' },
@@ -127,15 +127,15 @@ export default function AdminDashboard() {
                 {recentOrders.map((order) => (
                   <tr key={order.id} className="hover:bg-zinc-50 transition-colors">
                     <td className="px-10 py-6 font-black tracking-tight">{order.orderNumber}</td>
-                    <td className="px-10 py-6 font-bold">{(order.shippingAddress as any).fullName || 'Guest'}</td>
-                    <td className="px-10 py-6 font-black">₹{order.grandTotal.toLocaleString()}</td>
+                    <td className="px-10 py-6 font-bold">{order.shippingAddress?.fullName || 'Guest'}</td>
+                    <td className="px-10 py-6 font-black">₹{(order.grandTotal || 0).toLocaleString()}</td>
                     <td className="px-10 py-6">
                       <Badge variant={order.status === 'delivered' ? 'success' : 'outline'} className="text-[8px] uppercase tracking-widest">
                         {order.status}
                       </Badge>
                     </td>
                     <td className="px-10 py-6 text-zinc-400">
-                      {new Date(order.createdAt).toLocaleDateString()}
+                      {order.createdAt ? new Date(order.createdAt).toLocaleDateString() : 'N/A'}
                     </td>
                   </tr>
                 ))}

@@ -59,8 +59,8 @@ const AdminOrders: React.FC = () => {
 
   const filteredOrders = orders.filter(order => {
     const matchesSearch = 
-      order.orderNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      order.shippingAddress.fullName.toLowerCase().includes(searchTerm.toLowerCase());
+      order.orderNumber?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      order.shippingAddress?.fullName?.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = statusFilter === 'all' || order.status === statusFilter;
     return matchesSearch && matchesStatus;
   });
@@ -160,8 +160,8 @@ const AdminOrders: React.FC = () => {
                   </td>
                   <td className="px-6 py-4">
                     <div className="flex flex-col">
-                      <span className="font-semibold text-zinc-800 leading-none">{order.shippingAddress.fullName}</span>
-                      <span className="text-xs text-zinc-500 mt-1">{order.shippingAddress.city}, {order.shippingAddress.state}</span>
+                      <span className="font-semibold text-zinc-800 leading-none">{order.shippingAddress?.fullName || 'Guest'}</span>
+                      <span className="text-xs text-zinc-500 mt-1">{order.shippingAddress?.city || 'Unknown'}, {order.shippingAddress?.state || 'Unknown'}</span>
                     </div>
                   </td>
                   <td className="px-6 py-4">
@@ -246,8 +246,8 @@ const AdminOrders: React.FC = () => {
                     <div>
                       <h3 className="text-[10px] font-black uppercase tracking-widest text-zinc-400 mb-2">Customer</h3>
                       <div className="p-4 bg-zinc-50 rounded-2xl space-y-1">
-                        <p className="font-bold text-zinc-900 leading-tight">{selectedOrder.shippingAddress.fullName}</p>
-                        <p className="text-xs text-zinc-500">{selectedOrder.shippingAddress.phone}</p>
+                        <p className="font-bold text-zinc-900 leading-tight">{selectedOrder.shippingAddress?.fullName || 'Guest'}</p>
+                        <p className="text-xs text-zinc-500">{selectedOrder.shippingAddress?.phone || 'N/A'}</p>
                       </div>
                     </div>
                   </div>
@@ -268,9 +268,9 @@ const AdminOrders: React.FC = () => {
                     <div>
                       <h3 className="text-[10px] font-black uppercase tracking-widest text-zinc-400 mb-2">Shipping</h3>
                       <div className="p-4 bg-zinc-50 rounded-2xl text-[10px] text-zinc-500 space-y-1">
-                        <p>{selectedOrder.shippingAddress.addressLine1}</p>
-                        <p>{selectedOrder.shippingAddress.addressLine2}</p>
-                        <p className="font-bold text-zinc-900 uppercase">{selectedOrder.shippingAddress.city}, {selectedOrder.shippingAddress.state} - {selectedOrder.shippingAddress.pincode}</p>
+                        <p>{selectedOrder.shippingAddress?.addressLine1 || 'No address provided'}</p>
+                        <p>{selectedOrder.shippingAddress?.addressLine2}</p>
+                        <p className="font-bold text-zinc-900 uppercase">{selectedOrder.shippingAddress?.city}, {selectedOrder.shippingAddress?.state} - {selectedOrder.shippingAddress?.pincode}</p>
                       </div>
                     </div>
                   </div>
@@ -279,7 +279,7 @@ const AdminOrders: React.FC = () => {
                 <div>
                   <h3 className="text-[10px] font-black uppercase tracking-widest text-zinc-400 mb-4">Line Items</h3>
                   <div className="space-y-4">
-                    {selectedOrder.items.map((item, idx) => (
+                    {selectedOrder.items?.map((item: any, idx: number) => (
                       <div key={idx} className="flex items-center justify-between p-4 border border-zinc-100 rounded-2xl hover:bg-zinc-50 transition-colors">
                         <div className="flex items-center gap-4">
                           <img src={item.image} alt="" className="h-12 w-12 object-cover rounded-xl border border-zinc-100 shadow-sm" />
@@ -298,21 +298,21 @@ const AdminOrders: React.FC = () => {
                   <div className="space-y-3">
                     <div className="flex justify-between text-xs text-zinc-400 font-medium">
                       <span>Subtotal</span>
-                      <span>₹{selectedOrder.total.toLocaleString()}</span>
+                      <span>₹{(selectedOrder.total || 0).toLocaleString()}</span>
                     </div>
                     <div className="flex justify-between text-xs text-zinc-400 font-medium">
-                      <span>GST ({(selectedOrder.gstAmount / selectedOrder.total * 100).toFixed(0)}%)</span>
-                      <span>₹{selectedOrder.gstAmount.toLocaleString()}</span>
+                      <span>GST ({((selectedOrder.gstAmount || 0) / (selectedOrder.total || 1) * 100).toFixed(0)}%)</span>
+                      <span>₹{(selectedOrder.gstAmount || 0).toLocaleString()}</span>
                     </div>
                     <div className="flex justify-between text-xs text-zinc-400 font-medium">
                       <span>Shipping</span>
-                      <span>₹{selectedOrder.shippingCharge.toLocaleString()}</span>
+                      <span>₹{(selectedOrder.shippingCharge || 0).toLocaleString()}</span>
                     </div>
                   </div>
                   <div className="pt-4 border-t border-white/10 flex justify-between items-end">
                     <div>
                       <p className="text-[8px] font-black uppercase tracking-[0.2em] text-zinc-500 mb-1">Total Amount Paid</p>
-                      <p className="text-4xl font-black tracking-tighter">₹{selectedOrder.grandTotal.toLocaleString()}</p>
+                      <p className="text-4xl font-black tracking-tighter">₹{(selectedOrder.grandTotal || 0).toLocaleString()}</p>
                     </div>
                     <Button variant="accent" size="sm" className="rounded-xl h-10 px-6">
                       <FileText className="w-4 h-4 mr-2" />
