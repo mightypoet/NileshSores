@@ -51,7 +51,7 @@ export default function Login() {
             name: user.displayName,
             email: user.email,
             role: user.email === 'storesnilesh@gmail.com' ? 'admin' : 'customer',
-            createdAt: new Date().toISOString()
+            created_at: new Date().toISOString()
           });
         
         if (insertError) throw insertError;
