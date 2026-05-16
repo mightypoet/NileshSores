@@ -3,19 +3,21 @@ import { Product, Category, Banner, Order, UserProfile } from '../types';
 import { products as mockProducts, categories as mockCategories } from '../data/mockData';
 import { toast } from 'sonner';
 
-// Helper to map DB snake_case to UI camelCase
+// Helper to map DB to UI camelCase
 const mapProductFromDb = (p: any): Product => ({
   ...p,
-  reviewsCount: p.reviews_count !== undefined ? p.reviews_count : p.reviewsCount,
-  gstRate: p.gst_rate !== undefined ? p.gst_rate : p.gstRate,
-  categoryId: p.category_id !== undefined ? p.category_id : p.categoryId,
-  isBestSeller: p.is_best_seller !== undefined ? p.is_best_seller : p.isBestSeller,
+  reviewsCount: p.reviews_count !== undefined ? p.reviews_count : (p.reviewscount !== undefined ? p.reviewscount : p.reviewsCount),
+  gstRate: p.gst_rate !== undefined ? p.gst_rate : (p.gstrate !== undefined ? p.gstrate : p.gstRate),
+  categoryId: p.category_id !== undefined ? p.category_id : (p.categoryId !== undefined ? p.categoryId : p.categoryId),
+  isBestSeller: p.is_best_seller !== undefined ? p.is_best_seller : (p.isBestSeller !== undefined ? p.isBestSeller : p.isBestSeller),
   createdAt: p.created_at || p.createdAt,
   updatedAt: p.updated_at || p.updatedAt,
   categoryName: p.categories?.name
 });
 
-// Helper to map UI camelCase to DB snake_case
+// Helper to map UI camelCase to DB matching (We will just send camelCase if that's what DB expects or snake_case. 
+// Given the ambiguity, we'll send BOTH to be safe, Supabase ignores extra fields if they aren't in the schema, wait no, Supabase throws error for extra fields.
+// Better: We will query the DB first? No, we will just revert to snake_case, but also allow the user to run the SQL query to fix the schema.)
 const mapProductToDb = (p: any): any => {
   const { 
     reviewsCount, 
