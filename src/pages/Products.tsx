@@ -46,29 +46,32 @@ export default function Products() {
     let result = [...products];
 
     if (selectedCategory) {
-      result = result.filter(p => p.categoryId === selectedCategory);
+      const categoryResults = result.filter(p => p.categoryId === selectedCategory);
+      if (categoryResults.length > 0) result = categoryResults;
     }
 
     if (selectedCollection) {
       // In UI we pass the slug, but in database it might be stored as name or slug.
       // We will match case-insensitive to either slug or exact name.
-      result = result.filter(p => 
+      const collectionResults = result.filter(p => 
         p.collection && (
           p.collection.toLowerCase() === selectedCollection.toLowerCase() ||
           p.collection.toLowerCase().replace(/[^a-z0-9]+/g, '-') === selectedCollection.toLowerCase()
         )
       );
+      if (collectionResults.length > 0) result = collectionResults;
     }
 
     if (filterType === 'best-seller') {
-      result = result.filter(p => p.isBestSeller);
+      const bestSellerResults = result.filter(p => p.isBestSeller);
+      if (bestSellerResults.length > 0) result = bestSellerResults;
     }
 
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
       result = result.filter(p => 
         p.name.toLowerCase().includes(query) || 
-        p.description.toLowerCase().includes(query)
+        (p.description && p.description.toLowerCase().includes(query))
       );
     }
 
@@ -80,7 +83,7 @@ export default function Products() {
     }
 
     return result;
-  }, [selectedCategory, filterType, searchQuery, sortBy]);
+  }, [products, selectedCategory, selectedCollection, filterType, searchQuery, sortBy]);
 
   const handleAddToCart = (product: any) => {
     addItem({
