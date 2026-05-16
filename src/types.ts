@@ -42,7 +42,7 @@ export interface Order {
   id: string;
   orderNumber: string;
   userId: string;
-  status: 'pending' | 'processing' | 'shipped' | 'delivered' | 'cancelled';
+  status: 'pending' | 'processing' | 'shipped' | 'delivered' | 'cancelled' | 'done';
   total: number;
   gstAmount: number;
   shippingCharge: number;

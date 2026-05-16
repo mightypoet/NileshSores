@@ -491,6 +491,24 @@ export const dataService = {
   },
 
   // Order Management
+  async getUserOrders(userId: string): Promise<Order[]> {
+    if (!supabase) return [];
+    try {
+      const { data, error } = await supabase
+        .from('orders')
+        .select('*')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false });
+      
+      if (error) throw error;
+      if (data) return data.map(mapOrderFromDb);
+      return [];
+    } catch (error) {
+      console.error("Error fetching user orders from Supabase:", error);
+      return [];
+    }
+  },
+
   async getOrders(): Promise<Order[]> {
     if (!supabase) return [];
     try {

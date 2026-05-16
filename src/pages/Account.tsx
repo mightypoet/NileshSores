@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { useNavigate, Link } from 'react-router-dom';
 import { motion } from 'motion/react';
@@ -6,10 +7,23 @@ import { Button } from '@/components/ui/button';
 import { auth } from '../lib/firebase';
 import { signOut } from 'firebase/auth';
 import { toast } from 'sonner';
+import { dataService } from '../services/dataService';
+import { Order } from '../types';
 
 export default function Account() {
   const { user, profile } = useAuth();
   const navigate = useNavigate();
+  const [orders, setOrders] = useState<Order[]>([]);
+
+  useEffect(() => {
+    async function fetchOrders() {
+      if (user) {
+        const fetchedOrders = await dataService.getUserOrders(user.uid);
+        setOrders(fetchedOrders);
+      }
+    }
+    fetchOrders();
+  }, [user]);
 
   const handleLogout = async () => {
     await signOut(auth);
@@ -34,11 +48,7 @@ export default function Account() {
     );
   }
 
-  // Mock data for account
-  const orders = [
-    { id: 'NS-98231', date: 'Oct 24, 2024', status: 'Delivered', total: 1250, items: 4 },
-    { id: 'NS-82711', date: 'Sep 12, 2024', status: 'Delivered', total: 450, items: 1 },
-  ];
+  const totalSpent = orders.reduce((acc, order) => acc + order.grandTotal, 0);
 
   return (
     <div className="container mx-auto px-4 py-20 pb-40">
@@ -91,20 +101,24 @@ export default function Account() {
               </div>
 
               <div className="space-y-4">
-                {orders.map(order => (
+                {orders.length === 0 ? (
+                  <div className="text-center p-8 bg-zinc-50 rounded-[2.5rem] border border-zinc-100">
+                    <p className="text-sm font-bold text-zinc-400">No orders yet</p>
+                  </div>
+                ) : orders.map(order => (
                   <div key={order.id} className="group bg-white p-6 rounded-[2.5rem] border border-zinc-100 shadow-sm hover:shadow-xl hover:border-zinc-200 transition-all duration-500 flex flex-col md:flex-row items-center justify-between gap-6">
                     <div className="flex items-center gap-6">
                       <div className="h-16 w-16 rounded-2xl bg-zinc-50 flex items-center justify-center text-zinc-300">
                         <ShoppingBag className="h-8 w-8" />
                       </div>
                       <div className="space-y-1">
-                        <p className="text-lg font-black tracking-tight">{order.id}</p>
-                        <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">{order.date} &bull; {order.items} Items</p>
+                        <p className="text-lg font-black tracking-tight">{order.orderNumber}</p>
+                        <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">{new Date(order.createdAt?.seconds ? order.createdAt.seconds * 1000 : order.createdAt || Date.now()).toLocaleDateString()} &bull; {order.items.reduce((acc, item) => acc + item.quantity, 0)} Items</p>
                       </div>
                     </div>
                     <div className="flex items-center gap-10">
                       <div className="text-right">
-                        <p className="text-sm font-black text-zinc-900">₹{order.total}</p>
+                        <p className="text-sm font-black text-zinc-900">₹{order.grandTotal.toLocaleString()}</p>
                         <p className="text-[8px] font-black uppercase tracking-widest text-green-500">{order.status}</p>
                       </div>
                       <Button variant="outline" className="rounded-xl px-6 h-12 text-[10px] font-black uppercase tracking-widest">Details</Button>
@@ -139,7 +153,7 @@ export default function Account() {
                 <div className="space-y-2">
                   <div className="flex justify-between items-end">
                     <span className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Total Spent</span>
-                    <span className="text-2xl font-black">₹1,700</span>
+                    <span className="text-2xl font-black">₹{totalSpent.toLocaleString()}</span>
                   </div>
                   <div className="h-1 w-full bg-zinc-800 rounded-full overflow-hidden">
                     <div className="h-full w-[65%] bg-primary rounded-full" />
@@ -149,7 +163,7 @@ export default function Account() {
                   <div className="bg-white/5 p-6 rounded-3xl space-y-2">
                     <Package className="h-5 w-5 text-secondary" />
                     <div className="flex flex-col">
-                      <span className="text-xl font-black">02</span>
+                      <span className="text-xl font-black">{orders.length < 10 ? `0${orders.length}` : orders.length}</span>
                       <span className="text-[8px] font-black uppercase tracking-widest text-zinc-500">Orders</span>
                     </div>
                   </div>

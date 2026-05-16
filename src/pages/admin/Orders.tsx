@@ -71,6 +71,7 @@ const AdminOrders: React.FC = () => {
       case 'processing': return <div className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />;
       case 'shipped': return <Truck className="w-4 h-4" />;
       case 'delivered': return <CheckCircle2 className="w-4 h-4" />;
+      case 'done': return <CheckCircle2 className="w-4 h-4" />;
       case 'cancelled': return <XCircle className="w-4 h-4" />;
     }
   };
@@ -81,6 +82,7 @@ const AdminOrders: React.FC = () => {
       case 'processing': return 'bg-blue-100 text-blue-700 border-blue-200';
       case 'shipped': return 'bg-indigo-100 text-indigo-700 border-indigo-200';
       case 'delivered': return 'bg-green-100 text-green-700 border-green-200';
+      case 'done': return 'bg-emerald-100 text-emerald-700 border-emerald-200';
       case 'cancelled': return 'bg-red-100 text-red-700 border-red-200';
     }
   };
@@ -123,6 +125,7 @@ const AdminOrders: React.FC = () => {
           <option value="processing">Processing</option>
           <option value="shipped">Shipped</option>
           <option value="delivered">Delivered</option>
+          <option value="done">Done</option>
           <option value="cancelled">Cancelled</option>
         </select>
       </div>
@@ -227,7 +230,7 @@ const AdminOrders: React.FC = () => {
                     <div>
                       <h3 className="text-[10px] font-black uppercase tracking-widest text-zinc-400 mb-2">Status</h3>
                       <div className="flex flex-wrap gap-2">
-                        {['pending', 'processing', 'shipped', 'delivered', 'cancelled'].map((status) => (
+                        {['pending', 'processing', 'shipped', 'delivered', 'done', 'cancelled'].map((status) => (
                           <button
                             key={status}
                             onClick={() => handleStatusUpdate(selectedOrder.id, status as Order['status'])}
