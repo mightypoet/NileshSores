@@ -1,4 +1,6 @@
 import "dotenv/config";
+import { config } from "dotenv";
+config({ path: '.env.local' });
 import express from "express";
 import path from "path";
 import { fileURLToPath } from "url";
@@ -76,14 +78,16 @@ function getSupabaseAdmin() {
   if (!supabaseUrl || !supabaseServiceKey) {
     const missing = [];
     if (!supabaseUrl) missing.push("SUPABASE_URL");
-    if (!supabaseServiceKey) missing.push("SUPABASE_SERVICE_ROLE_KEY");
+    if (!supabaseServiceKey) missing.push("SUPABASE_SERVICE_ROLE_KEY or ANON_KEY");
     
     // Diagnostic: Log available env keys (not values) to help debugging
     const envEntries = Object.entries(process.env).filter(([k]) => 
       k.includes('SUPABASE') || k.includes('KEY') || k.includes('URL') || k.includes('SERVICE') || k.includes('SECRET')
-    ).map(([k, v]) => `${k} (starts with: ${v ? v.substring(0, 5) + '...' : 'empty'})`);
+    ).map(([k, v]) => `${k} (starts with: ${typeof v === 'string' && v.length > 0 ? v.substring(0, 5) + '...' : 'empty'})`);
 
-    console.warn(`>>> [SERVER] Missing configuration: ${missing.join(", ")}. Found relevant env variables: \n${envEntries.join('\n')}`);
+    const errMsg = `Missing configuration: ${missing.join(", ")}. Found env variables: \n${envEntries.join('\n')}`;
+    console.warn(`>>> [SERVER] ${errMsg}`);
+    (global as any)._lastSupabaseAdminError = errMsg;
     return null;
   }
 
@@ -101,7 +105,8 @@ function getSupabaseAdmin() {
     return _supabaseAdmin;
   } catch (err: any) {
     console.error(">>> [SERVER] Failed to create Supabase client:", err.message);
-    throw new Error(`Failed to create Supabase client: ${err.message}`);
+    (global as any)._lastSupabaseAdminError = err.message;
+    return null;
   }
 }
 
@@ -152,23 +157,17 @@ const handleUpload = async (req: any, res: any) => {
   console.log(`[${requestId}] >>> [SERVER] Incoming upload request: ${req.file ? req.file.originalname : 'No file'}`);
   
   try {
-    let admin;
-    try {
-      admin = getSupabaseAdmin();
-    } catch (e: any) {
-      console.error(`[${requestId}] >>> [SERVER] Upload failed due to Supabase init error:`, e.message);
-      return res.status(500).json({ error: e.message });
-    }
-    
+    const admin = getSupabaseAdmin();
     if (!admin) {
       const envKeys = Object.keys(process.env).filter(k => 
         k.includes('SUPABASE') || k.includes('KEY') || k.includes('URL') || k.includes('SERVICE') || k.includes('SECRET')
       );
       
+      const lastError = (global as any)._lastSupabaseAdminError;
       console.error(`[${requestId}] >>> [SERVER] Upload failed: Supabase Admin client not initialized. Available keys: ${envKeys.join(', ')}`);
       
       return res.status(500).json({ 
-        error: `Server configuration error: Supabase connection could not be established.`,
+        error: `Server configuration error: Supabase connection could not be established. ${lastError ? 'Reason: ' + lastError : ''}`,
         tip: `Detected relevant keys in environment: ${envKeys.join(', ') || 'none'}. Please ensure you have added 'SUPABASE_SERVICE_ROLE_KEY' in the Secrets menu. If you only have a publishable key, insure it's named 'NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY'.`
       });
     }
@@ -245,7 +244,8 @@ async function initialize() {
       appType: "spa",
       define: {
         'import.meta.env.VITE_SUPABASE_URL': JSON.stringify(process.env.VITE_SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL),
-        'import.meta.env.VITE_SUPABASE_ANON_KEY': JSON.stringify(process.env.VITE_SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY)
+        'import.meta.env.VITE_SUPABASE_ANON_KEY': JSON.stringify(process.env.VITE_SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY),
+        'import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY': JSON.stringify(process.env.VITE_SUPABASE_PUBLISHABLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY)
       }
     });
     app.use(vite.middlewares);
